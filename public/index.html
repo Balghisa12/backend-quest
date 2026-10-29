@@ -81,13 +81,48 @@ button:focus-visible,.opt:focus-visible{outline:3px solid #ffe1a0;outline-offset
 @media(min-width:561px){body{background:radial-gradient(circle at 50% 30%,#214d50,#08121d 62%)}}
 @media(max-height:710px){.slide{padding-top:75px;padding-bottom:95px}.big-title{font-size:clamp(26px,6.2vw,36px)}.body-text{font-size:15px}.code{font-size:12px;max-height:35dvh}.quiz-options{gap:7px;margin:12px 0}.opt{padding:10px;min-height:44px}}
 @media(prefers-reduced-motion:reduce){#feed{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
-.nav-search{width:100%;background:#071c2e;color:#fff;border:1px solid #658a91;padding:13px;border-radius:11px;margin:10px 0 14px}.chapter-row[hidden]{display:none}.slide-content p{overflow-wrap:break-word}.card-panel p{overflow-wrap:break-word}.restudy{margin-top:11px}.swipe-hint button{min-height:38px}@media(max-height:680px){.slide-content{padding-bottom:15px}}</style>
+.nav-search{width:100%;background:#071c2e;color:#fff;border:1px solid #658a91;padding:13px;border-radius:11px;margin:10px 0 14px}.chapter-row[hidden]{display:none}.slide-content p{overflow-wrap:break-word}.card-panel p{overflow-wrap:break-word}.restudy{margin-top:11px}.swipe-hint button{min-height:38px}@media(max-height:680px){.slide-content{padding-bottom:15px}}
+/* Mobile reading and swipe improvements */
+:root{--touch:48px}
+body{-webkit-text-size-adjust:100%}
+.shell{width:100%;max-width:600px}
+.slide{padding:calc(env(safe-area-inset-top) + 105px) clamp(17px,5vw,28px) calc(env(safe-area-inset-bottom) + 112px);justify-content:flex-start}
+.slide-content{width:100%;max-height:100%;padding:0 2px 12px;overscroll-behavior-y:contain;overflow-y:auto;touch-action:pan-y}
+.lesson-step{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12px;color:#bce6da;font-weight:750;letter-spacing:.2px;margin:0 54px 13px 0}
+.lesson-step span:last-child{color:#b3c8d3;font-variant-numeric:tabular-nums}
+.big-title{font-size:clamp(26px,6.7vw,39px);line-height:1.16;letter-spacing:-.8px;margin-bottom:15px}
+.concept-title{font-size:clamp(24px,6.4vw,34px)}
+.body-text{font-size:clamp(16px,4.1vw,18px);line-height:1.58;max-width:56ch}
+.concept-copy{display:grid;gap:12px}
+.concept-copy p{margin:0;max-width:62ch;overflow-wrap:anywhere}
+.lead-sentence{font-size:clamp(18px,4.6vw,21px);font-weight:710;line-height:1.5;color:#f4fff9}
+.detail-sentence{font-size:clamp(16px,4vw,18px);line-height:1.62;color:#d8eaf4}
+.memory-cue{border-left:3px solid #79edc3;padding:10px 13px;background:#0e352f87;border-radius:0 12px 12px 0;margin-top:20px;display:grid;gap:4px;font-size:14px;line-height:1.5;color:#d6eae6}
+.memory-cue strong{color:#a9f5d4}
+.end-cue{color:#c6dfe6;font-size:12px;text-align:center;margin-top:20px;padding:4px 0 12px;opacity:.86}
+.slide .eyebrow{font-size:11px;letter-spacing:1.4px;margin-bottom:10px}
+.card-panel{margin-top:12px;padding:15px;border-radius:16px}.card-panel p{font-size:15px;line-height:1.55}
+.code{font-size:13px;line-height:1.6;padding:14px;max-height:49dvh;white-space:pre;overflow:auto;touch-action:pan-x pan-y}
+.quote{font-size:clamp(17px,4.4vw,21px);line-height:1.55}
+.opt,.answer-btn,.done-btn,.soft-btn,.top-icon,.next-btn,.chapter-row{min-height:var(--touch)}
+.opt{font-size:15px;line-height:1.5;padding:12px 14px}
+.app-top{padding-left:clamp(14px,4vw,22px);padding-right:clamp(14px,4vw,22px);background:linear-gradient(180deg,#061320 55%,#06132000)}
+.app-bottom{padding:13px clamp(15px,4vw,22px) calc(env(safe-area-inset-bottom) + 12px);background:linear-gradient(0deg,#071321 75%,#07132100)}
+.lesson-progress{height:3px;background:#ffffff2b;overflow:hidden;border-radius:4px;margin:0 0 12px}.lesson-progress>div{height:100%;width:0%;background:#8be6ca;transition:width .15s}
+.bottom-row{gap:8px}.bottom-meta{margin-bottom:7px}
+.swipe-hint{gap:9px;white-space:nowrap}.top-icon{padding:10px 12px}.next-btn{padding:10px 18px;font-size:14px}
+.slide-bookmark{top:calc(env(safe-area-inset-top) + 122px);right:clamp(17px,5vw,28px);width:44px;height:44px}
+.sheet-panel{max-height:92dvh;padding-bottom:calc(env(safe-area-inset-bottom) + 22px)}.nav-search{font-size:16px}
+@media(max-width:350px){.logo{font-size:14px}.top-icon{font-size:11px;padding:9px}.big-title{font-size:25px}.slide{padding-top:calc(env(safe-area-inset-top) + 104px)}.bottom-row{gap:5px}}
+@media(max-height:710px){.slide{padding-top:calc(env(safe-area-inset-top) + 93px);padding-bottom:calc(env(safe-area-inset-bottom) + 105px)}.slide-bookmark{top:calc(env(safe-area-inset-top) + 98px)}.big-title{font-size:25px}.code{max-height:36dvh}.lesson-step{margin-bottom:8px}.end-cue{margin-top:11px}}
+@media(prefers-reduced-motion:reduce){.lesson-progress>div{transition:none}}
+</style>
 </head>
 <body>
 <div class="shell" id="shell">
   <div id="feed"><div class="loading"><div><h1>⌘ Backend Quest</h1><p>Getting your bite-sized lessons ready…</p></div></div></div>
   <header class="app-top"><div class="top-row"><div class="logo">⌘ BACKEND <span>QUEST</span></div><div class="top-right"><button class="top-icon" id="savedBtn" aria-label="Show bookmarked lessons">♡ Saved</button><button class="top-icon" id="chaptersBtn">☰ Topics</button></div></div><div class="p-bar"><span id="topProgress"></span></div></header>
-  <div class="app-bottom"><div class="bottom-meta" id="meta">Learn • Try • Explain</div><div class="bottom-row"><div class="swipe-hint"><button class="top-icon" id="prevBtn" aria-label="Previous card">↓ Back</button><span id="indexDisplay"></span></div><button class="next-btn" id="nextBtn">Next ↑</button></div></div>
+  <div class="app-bottom"><div class="bottom-meta" id="meta">Learn • Try • Explain</div><div class="lesson-progress"><div id="lessonProgress"></div></div><div class="bottom-row"><div class="swipe-hint"><button class="top-icon" id="prevBtn" aria-label="Previous card">↑ Back</button><span id="indexDisplay"></span></div><button class="next-btn" id="nextBtn">Next ↓</button></div></div>
   <div class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-label="Choose your learning topic"><div class="sheet-panel"><div class="sheet-top"><h2 id="sheetTitle">Your learning path</h2><button class="sheet-close" id="closeSheet" aria-label="Close topics">×</button></div><p class="sheet-tip" id="sheetTip">Swipe through a chapter, one simple idea at a time.</p><div id="sheetContent"></div></div></div>
 </div>
 <script>
@@ -122,8 +157,8 @@ function buildSlides(){
  for(const l of selected){
   const base={lessonId:l.id,lesson:l,group:groupFor(l.module)};
   slides.push({...base,id:l.id+":hook",kind:"hook",text:l.scenario,stage:"Real life"});
-  splitText(l.explanation,340).forEach((part,i,all)=>slides.push({...base,id:l.id+":explain:"+i,kind:"explain",text:part,part:i+1,total:all.length,stage:"Learn"}));
-  const lines=(l.code||"").split("\n");const per=11;
+  splitText(l.explanation,270).forEach((part,i,all)=>slides.push({...base,id:l.id+":explain:"+i,kind:"explain",text:part,part:i+1,total:all.length,stage:"Learn"}));
+  const lines=(l.code||"").split("\n");const per=9;
   for(let i=0;i<lines.length;i+=per)slides.push({...base,id:l.id+":code:"+Math.floor(i/per),kind:"code",code:lines.slice(i,i+per).join("\n"),part:Math.floor(i/per)+1,total:Math.ceil(lines.length/per),stage:"Code"});
   const walk=l.walk||[];
   for(let i=0;i<walk.length;i+=2)slides.push({...base,id:l.id+":walk:"+Math.floor(i/2),kind:"walk",steps:walk.slice(i,i+2),offset:i,part:Math.floor(i/2)+1,total:Math.ceil(walk.length/2),stage:"Understand"});
@@ -132,19 +167,21 @@ function buildSlides(){
   slides.push({...base,id:l.id+":recap",kind:"recap",stage:"Interview ready"});
  }
 }
+function lessonStage(s){return ["hook","explain","code","walk","quiz","apply","recap"].indexOf(s.kind)+1}
+function stageName(s){return ["Problem","Concept","Code","Walkthrough","Quiz","Practice","Interview"][lessonStage(s)-1]}
 function segmentLabel(s){return s.kind==="hook"?"01 · A real situation":s.kind==="explain"?"02 · THE EXPLANATION":s.kind==="code"?"03 · REAL CODE":s.kind==="walk"?"04 · STEP BY STEP":s.kind==="quiz"?"05 · CHOOSE YOUR ANSWER":s.kind==="apply"?"06 · PRACTICE": "07 · RECAP"}
 function lessonPosition(l){return lessons.findIndex(x=>x.id===l.id)+1}
 function makeSlide(s,i){
  const l=s.lesson;const saved=progress.bookmarks.includes(l.id);let content="";
  const title=l.title.replace(/^\d+\.\s*/,"");
- if(s.kind==="hook")content='<div class="pill">✦ '+esc(moduleName(l.module))+' · Lesson '+lessonPosition(l)+'</div><div class="eyebrow">Here is a real problem</div><h1 class="big-title">'+esc(title)+'</h1><p class="body-text">'+esc(s.text)+'</p><div class="card-panel"><b>Why this matters</b><p>Imagine you are building our online shop. Keep swiping and we will solve this problem together.</p></div>';
- if(s.kind==="explain")content='<div class="eyebrow">Learn · '+s.part+'/'+s.total+'</div><div class="pill">No jargon without examples</div><h2 class="big-title">'+(s.part===1?"Let's make it simple.":"One more important idea.")+'</h2><p class="body-text">'+esc(s.text)+'</p><div class="card-panel"><b>Your task</b><p>Before you scroll: can you explain this idea in one sentence?</p></div>';
- if(s.kind==="code")content='<div class="eyebrow">Code example · '+s.part+'/'+s.total+'</div><h2 class="big-title">See it in code.</h2><pre class="code"><code>'+esc(s.code)+'</code></pre><p class="code-caption">Read each line slowly. Next, we explain exactly what the code is doing.</p>';
- if(s.kind==="walk")content='<div class="eyebrow">Step-by-step · '+s.part+'/'+s.total+'</div><h2 class="big-title">Why does it work?</h2>'+s.steps.map((step,j)=>'<div class="card-panel"><b>Step '+(s.offset+j+1)+'</b><p>'+esc(step)+'</p></div>').join('');
+ if(s.kind==="hook")content='<div class="pill">✦ '+esc(moduleName(l.module))+' · Lesson '+lessonPosition(l)+'</div><div class="eyebrow">Here is a real problem</div><h1 class="big-title">'+esc(title)+'</h1><p class="body-text">'+esc(s.text)+'</p><div class="card-panel"><b>What you will learn</b><p>You will practice this concept with code, a quick check and an interview answer.</p></div>';
+ if(s.kind==="explain")content='<div class="eyebrow">Understand · '+s.part+'/'+s.total+'</div><h2 class="big-title concept-title">'+esc(s.part===1?l.topic:"Build the mental model")+'</h2><div class="concept-copy">'+s.text.split(/(?<=[.!?])\\s+/).map((sentence,n)=>'<p class="'+(n===0?'lead-sentence':'detail-sentence')+'">'+esc(sentence)+'</p>').join("")+'</div><div class="memory-cue"><strong>Say it simply</strong><span>What is the main engineering idea here?</span></div>';
+ if(s.kind==="code")content='<div class="eyebrow">Code example · '+s.part+'/'+s.total+'</div><h2 class="big-title concept-title">How it works in code</h2><pre class="code"><code>'+esc(s.code)+'</code></pre><p class="code-caption">Read each line slowly. Next, we explain exactly what the code is doing.</p>';
+ if(s.kind==="walk")content='<div class="eyebrow">Step-by-step · '+s.part+'/'+s.total+'</div><h2 class="big-title concept-title">Trace the logic</h2>'+s.steps.map((step,j)=>'<div class="card-panel"><b>Step '+(s.offset+j+1)+'</b><p>'+esc(step)+'</p></div>').join('');
  if(s.kind==="quiz"){const a=progress.answers[l.id],pick=a?a.choice:-1;const why=a?(l.quiz.optionFeedback?.[a.choice]||l.quiz.feedback):"";content='<div class="eyebrow">Quick knowledge check</div><h2 class="big-title">'+esc(l.quiz.question)+'</h2><div class="quiz-options">'+l.quiz.answers.map((x,n)=>'<button class="opt '+(pick===n?'selected '+(pick===l.quiz.correct?'good':'bad'):'')+'" data-action="answer" data-lesson="'+esc(l.id)+'" data-choice="'+n+'"><span class="letter">'+String.fromCharCode(65+n)+'</span><span>'+esc(x)+'</span></button>').join("")+'</div>'+(a?'<div class="feedback '+(a.correct?'':'bad')+'"><b>'+(a.correct?'✓ You got it!':'Not quite — this is how we learn.')+'</b>'+esc(why)+'</div><div class="card-panel"><b>Why this is the answer</b><p>'+esc(l.quiz.feedback)+'</p></div><button class="soft-btn" data-action="restudy" data-lesson="'+esc(l.id)+'">↶ Review the explanation</button><p class="feed-note">'+(a.correct?'Good work. You can scroll to try the exercise.':'Try another option if you like, or swipe to see the explanation.')+'</p>':'<p class="feed-note">Tap one answer. You get feedback immediately, no pressure.</p>')}
- if(s.kind==="apply")content='<div class="eyebrow">Your practice exercise</div><h2 class="big-title">Now you try.</h2><p class="body-text">'+esc(l.exercise)+'</p><textarea class="note-input" rows="4" placeholder="Explain in your own words. It saves automatically…" aria-label="Your answer" data-action="note" data-lesson="'+esc(l.id)+'">'+esc(progress.notes[l.id]||"")+'</textarea><button class="soft-btn" data-action="reveal" data-lesson="'+esc(l.id)+'">Show explained answer ↓</button><div id="solution-'+esc(l.id)+'" hidden class="feedback"><b>One good answer</b>'+esc(l.solution)+'</div>';
- if(s.kind==="recap")content='<div class="eyebrow">Interview-ready recap</div><h2 class="big-title">Can you explain it aloud?</h2><div class="quote">'+esc(l.interview)+'</div><div class="card-panel"><b>One mistake to avoid</b><p>'+esc(l.warning)+'</p></div><button class="done-btn" data-action="complete" data-lesson="'+esc(l.id)+'">'+(progress.completed.includes(l.id)?'✓ Learned — keep going':'✓ I understand this lesson')+'</button><p class="feed-note">Speak the answer in your own words. Then keep swiping to the next lesson.</p>';
- return '<article class="slide" data-index="'+i+'" data-id="'+esc(s.id)+'" data-group="'+esc(s.group)+'" aria-label="'+esc(s.stage+' · '+l.title)+'"><button class="slide-bookmark '+(saved?'saved':'')+'" data-action="bookmark" data-lesson="'+esc(l.id)+'" aria-label="'+(saved?'Remove saved lesson':'Save lesson for later')+'">'+(saved?'♥':'♡')+'</button><div class="slide-content"><div class="eyebrow">'+esc(segmentLabel(s))+'</div>'+content+'</div></article>';
+ if(s.kind==="apply")content='<div class="eyebrow">Your practice exercise</div><h2 class="big-title concept-title">Your interview answer</h2><p class="body-text">'+esc(l.exercise)+'</p><textarea class="note-input" rows="4" placeholder="Explain in your own words. It saves automatically…" aria-label="Your answer" data-action="note" data-lesson="'+esc(l.id)+'">'+esc(progress.notes[l.id]||"")+'</textarea><button class="soft-btn" data-action="reveal" data-lesson="'+esc(l.id)+'">Show explained answer ↓</button><div id="solution-'+esc(l.id)+'" hidden class="feedback"><b>One good answer</b>'+esc(l.solution)+'</div>';
+ if(s.kind==="recap")content='<div class="eyebrow">Interview-ready recap</div><h2 class="big-title">Can you explain it aloud?</h2><div class="quote">'+esc(l.interview)+'</div><div class="card-panel"><b>One mistake to avoid</b><p>'+esc(l.warning)+'</p></div><button class="done-btn" data-action="complete" data-lesson="'+esc(l.id)+'">'+(progress.completed.includes(l.id)?'✓ Learned — keep going':'✓ I understand this lesson')+'</button><p class="feed-note">Speak this aloud in under 60 seconds, then mark the lesson complete.</p>';
+ return '<article class="slide" data-index="'+i+'" data-id="'+esc(s.id)+'" data-group="'+esc(s.group)+'" aria-label="'+esc(s.stage+' · '+l.title)+'"><button class="slide-bookmark '+(saved?'saved':'')+'" data-action="bookmark" data-lesson="'+esc(l.id)+'" aria-label="'+(saved?'Remove saved lesson':'Save lesson for later')+'">'+(saved?'♥':'♡')+'</button><div class="slide-content" tabindex="0" role="region" aria-label="Lesson content: scroll to read"><div class="lesson-step"><span>'+esc(stageName(s))+'</span><span>'+lessonStage(s)+ of 7</span></div>'+content+'<div class="end-cue">↓ Swipe up for the next card</div></div></article>';
 }
 function render(targetId){
  buildSlides();
@@ -155,16 +192,20 @@ function render(targetId){
  for(const el of feed.querySelectorAll(".slide"))observer.observe(el);
  const target=targetId?slides.findIndex(x=>x.id===targetId):0;
  active=Math.max(0,target);onActive();
- feed.scrollTop=active*feed.clientHeight;
+ const targetEl=feed.querySelector(\'.slide[data-index="\'+active+\'"]\');if(targetEl)feed.scrollTop=targetEl.offsetTop;
 }
 function updateTop(){
  document.getElementById("topProgress").style.width=slides.length?(((active+1)/slides.length)*100)+"%":"0%";
  const s=slides[active];document.getElementById("meta").textContent=s?moduleName(s.lesson.module)+" · "+s.lesson.title:"Your learning feed";
  document.getElementById("indexDisplay").textContent=slides.length?(active+1)+" / "+slides.length:"";
+ const within=s?slides.filter(x=>x.lessonId===s.lessonId):[];
+ const n=s?within.findIndex(x=>x.id===s.id):-1;
+ document.getElementById("lessonProgress").style.width=within.length?((n+1)/within.length*100)+"%":"0%";
+ document.getElementById("nextBtn").textContent=active>=slides.length-1?"Finished ✓":"Next ↓";
  const saved=selectedModule==="saved";document.getElementById("savedBtn").textContent=saved?"♥ Saved":"♡ Saved";
 }
 function onActive(){const s=slides[active];if(s){progress.lastSlide=s.id;progress.views[s.lessonId]=1;save()}updateTop()}
-function goIndex(n){if(!slides.length)return;const idx=Math.max(0,Math.min(slides.length-1,n));feed.scrollTo({top:idx*feed.clientHeight,behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"instant":"smooth"});active=idx;onActive()}
+function goIndex(n){if(!slides.length)return;const idx=Math.max(0,Math.min(slides.length-1,n));feed.scrollTo({top:feed.querySelector(\'.slide[data-index="\'+idx+\'"]\')?.offsetTop??idx*feed.clientHeight,behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"instant":"smooth"});active=idx;onActive()}
 function openSheet(mode){const sc=document.getElementById("sheetContent");document.getElementById("sheetTitle").textContent="Choose what to learn";let html='<div class="progress-row"><span>Lessons understood</span><b>'+progress.completed.length+' / '+lessons.length+'</b></div><div class="progress-row"><span>Questions answered correctly</span><b>'+Object.values(progress.answers).filter(a=>a.correct).length+'</b></div><button class="chapter-row" data-action="module" data-module="all"><span>✨</span><div><strong>For You · All lessons</strong><small>Learn everything by scrolling</small></div></button>';
  for(const m of modules){const mLessons=lessons.filter(l=>l.module===m.id);const done=mLessons.filter(l=>progress.completed.includes(l.id)).length;html+='<button class="chapter-row" data-action="module" data-module="'+esc(m.id)+'"><span>▤</span><div><strong>'+esc(m.title)+'</strong><small>'+esc(m.description)+'</small><span class="chapter-count">'+done+'/'+mLessons.length+' completed</span></div></button>'}
  sc.innerHTML='<label class="small" for="topicSearch">Search your chapters</label><input id="topicSearch" class="nav-search" type="search" placeholder="TypeScript, security, SQL…" aria-label="Search chapters">'+html;sheet.hidden=false;document.getElementById("closeSheet").focus();
