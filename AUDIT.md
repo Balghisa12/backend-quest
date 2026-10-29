@@ -34,3 +34,26 @@ Run with `bun test`.
 ## Design principle
 
 Keep the existing one-card-at-a-time vertical feed but make every card self-contained, scannable and comfortable on a 320–390px display. Preserve existing lesson IDs to retain browser-saved progress.
+
+
+## Color and readability follow-up — 29 October 2026
+
+A focused review of the 59-lesson swipe interface identified translucent surfaces over multiple colored gradients, low-visibility borders and helper copy, inconsistent code and form typography, and small secondary labels as the most actionable visual issues.
+
+### Applied
+
+- Consolidated the page into an opaque navy reading surface with restrained accents (mint for actions, neutral off-white for body copy).
+- Increased text/background separation for explanations, code samples, quizzes, notes, navigation and modal sheet.
+- Added explicit success and error states for quiz feedback that remain readable without relying on green/red alone.
+- Made the code background solid, increased line height and visibly outlined code containers.
+- Increased secondary label and note text to 13px and made form inputs 16px to prevent mobile input zoom.
+- Improved focus rings and added an elevated-contrast media-query mode.
+- Kept the same 59 lessons, saved lesson IDs, progress storage key and swipe navigation.
+
+### Review notes
+
+Representative design-token contrast ratios calculated using the WCAG relative-luminance formula: primary text #F2F7FA on #101B2B ≈16.03:1; muted #CCD9E3 on #101B2B ≈12.03:1; mint #A6F5D5 on #101B2B ≈13.71:1; code text #E7F4FC on #07111F ≈16.9:1; quiz text #F5FAFF on #183047 ≈12.88:1. These checks are not a full pixel-by-pixel WCAG audit, especially for gradients, interactive states and browser rendering.
+
+### Still needs manual testing
+
+Test at 320px/375px/430px widths on iOS Safari and Android Chrome, including keyboard opening, scroll handoff, long code lines, system large-text mode and high-contrast settings. Screen reader focus handling of the topics sheet requires further attention.
