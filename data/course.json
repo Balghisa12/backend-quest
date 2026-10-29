@@ -1,0 +1,1660 @@
+{
+  "version": "2.0-interview",
+  "course": "Backend Quest · Full-stack API & Backend Academy",
+  "modules": [
+    {
+      "id": "web",
+      "title": "1 · How the web works",
+      "description": "Browser, server, requests, responses, JSON and state.",
+      "priority": "Start here"
+    },
+    {
+      "id": "ts",
+      "title": "2 · TypeScript foundations",
+      "description": "Types, unions, generics, runtime validation and asynchronous code.",
+      "priority": "Interview essential"
+    },
+    {
+      "id": "node",
+      "title": "3 · Node.js & NestJS",
+      "description": "Event loop, controllers, modules, services and dependency injection.",
+      "priority": "Interview essential"
+    },
+    {
+      "id": "api",
+      "title": "4 · API design & protocols",
+      "description": "REST, status codes, OpenAPI, pagination, tRPC and gRPC.",
+      "priority": "Interview essential"
+    },
+    {
+      "id": "sql",
+      "title": "5 · SQL & PostgreSQL",
+      "description": "Querying data, joins, indexes, schema design and concurrency.",
+      "priority": "Interview essential"
+    },
+    {
+      "id": "orm",
+      "title": "6 · ORMs & SQLAlchemy",
+      "description": "Python SQLAlchemy, TypeScript Prisma, transactions and N+1.",
+      "priority": "Expand skills"
+    },
+    {
+      "id": "security",
+      "title": "7 · Backend security",
+      "description": "Auth, permissions, validation, password safety, CORS and CSRF.",
+      "priority": "Interview essential"
+    },
+    {
+      "id": "patterns",
+      "title": "8 · Architecture & design patterns",
+      "description": "Layered services, ports/adapters, SOLID and transaction boundaries.",
+      "priority": "Interview essential"
+    },
+    {
+      "id": "distributed",
+      "title": "9 · Reliability & distributed systems",
+      "description": "Idempotency, outbox, queues, retries, caching and payment recovery.",
+      "priority": "Interview essential"
+    },
+    {
+      "id": "testing",
+      "title": "10 · Testing & quality",
+      "description": "Unit, integration, API and concurrency tests.",
+      "priority": "Hands-on"
+    },
+    {
+      "id": "frontend",
+      "title": "11 · Frontend integration",
+      "description": "React forms, loading, error handling and accessible UI.",
+      "priority": "Full-stack"
+    },
+    {
+      "id": "devops",
+      "title": "12 · Deployment & observability",
+      "description": "Docker, CI/CD, database migrations, logs and metrics.",
+      "priority": "Full-stack"
+    },
+    {
+      "id": "system",
+      "title": "13 · System design & interview",
+      "description": "Design checkout, reason about scale and explain tradeoffs.",
+      "priority": "Interview essential"
+    },
+    {
+      "id": "go",
+      "title": "14 · Go engineering interviews",
+      "description": "Goroutines, channels, cancellation and concurrency debugging.",
+      "priority": "Interview essential"
+    },
+    {
+      "id": "ai",
+      "title": "15 · AI engineering & agents",
+      "description": "Reliable tool calling, authorization and prompt-injection defenses.",
+      "priority": "Senior engineering"
+    }
+  ],
+  "count": 43,
+  "lessons": [
+    {
+      "id": "web-request",
+      "module": "web",
+      "topic": "How the web works",
+      "title": "Browser → API → database: one complete request",
+      "scenario": "When a customer clicks Buy, what actually happens? The browser does not talk directly to PostgreSQL. It sends an HTTP request to a server, which checks the customer, performs work and returns a response.",
+      "explanation": "The frontend is the part the customer sees: buttons, forms, pages and messages. The backend is the trusted server that validates requests, enforces rules and interacts with the database. HTTP is the language used for the request and response. The browser sends a method (such as POST), a URL, headers and sometimes a JSON body. The server reads those fields, checks authentication and validation, updates PostgreSQL, then returns a status code and response body. A common mistake is to think that disabling a Buy button protects inventory. Anyone can send an HTTP request outside the UI, so the backend must own the real rule.",
+      "code": "// Browser (frontend)\nawait fetch(\"/api/orders\", {\n  method: \"POST\",\n  headers: {\"Content-Type\": \"application/json\"},\n  body: JSON.stringify({ productId: \"coffee\", quantity: 2 })\n});\n\n// API conceptually:\n// 1. Validate JSON\n// 2. Authorize customer\n// 3. Reserve stock in PostgreSQL\n// 4. Return 201 Created",
+      "walk": [
+        "fetch sends an HTTP request from the browser to the API.",
+        "The method POST means the client is submitting or creating an order.",
+        "JSON.stringify converts a JavaScript object to JSON text for the request body.",
+        "The server must validate the body even if a frontend form already did.",
+        "The server safely updates persistent data, then sends an HTTP response."
+      ],
+      "quiz": {
+        "question": "Who must enforce that quantity is positive: the browser or the backend?",
+        "answers": [
+          "Only the browser",
+          "The backend; the browser can also help UX",
+          "Only the database administrator"
+        ],
+        "correct": 1,
+        "feedback": "The browser can give instant feedback but is untrusted. The backend must enforce rules.",
+        "optionFeedback": [
+          "A browser-only rule can be bypassed.",
+          "Correct: enforce it on the trusted server.",
+          "A gateway alone cannot protect all domain rules."
+        ]
+      },
+      "exercise": "Explain the exact trip an order makes from click to visible confirmation.",
+      "solution": "Browser builds POST request → API authenticates and validates → use case reserves stock and writes order → server returns status and ID → frontend shows confirmation.",
+      "interview": "A request travels from frontend to backend; backend enforces rules and talks to the database; response guides the UI.",
+      "warning": "Never put a database password into browser JavaScript.",
+      "focus": true
+    },
+    {
+      "id": "web-json",
+      "module": "web",
+      "topic": "How the web works",
+      "title": "JSON, HTTP headers, cookies and state",
+      "scenario": "Your React page refreshes. Why did a normal JavaScript variable reset, yet the server still knows who you are? What is the difference between JSON and a cookie?",
+      "explanation": "JSON is a text format for exchanging data, such as an order containing productId and quantity. HTTP is stateless: each request is a separate message. Servers often use cookies containing a session identifier or token to recognize a returning browser across requests. With a server-side session, the cookie identifies session state stored or verified by the server. A cookie is not the same as JSON: JSON is usually the API payload, while a cookie can be attached automatically to requests. localStorage is browser storage, not a built-in authentication security boundary.",
+      "code": "// A JSON response body:\n{ \"id\": \"ord_7\", \"status\": \"PENDING\" }\n\n// Example response header from a server:\n// Set-Cookie: sid=opaque-id; HttpOnly; Secure; SameSite=Lax\n\n// Browser fetch to same-origin API:\nconst response = await fetch(\"/api/me\");\nconst me = await response.json();",
+      "walk": [
+        "JSON describes the response data, including ID and status.",
+        "The server sets a session cookie in an HTTP response header.",
+        "HttpOnly prevents ordinary JavaScript from reading that cookie.",
+        "Secure requires HTTPS; SameSite controls some cross-site cookie contexts.",
+        "A later request can include the cookie so the server can associate it with a session."
+      ],
+      "quiz": {
+        "question": "What is a good place for an HTTP-only session cookie?",
+        "answers": [
+          "Inside JavaScript source code",
+          "The server's Set-Cookie response header",
+          "In a public GitHub commit"
+        ],
+        "correct": 1,
+        "feedback": "A backend can set an HttpOnly Secure session cookie via Set-Cookie.",
+        "optionFeedback": [
+          "JavaScript-accessible storage is not an HttpOnly cookie.",
+          "Correct: use a server Set-Cookie header.",
+          "Query strings can leak session identifiers."
+        ]
+      },
+      "exercise": "Explain why storing an access token in localStorage has different XSS risks from an HttpOnly cookie.",
+      "solution": "JavaScript can read localStorage; XSS could steal that token. An HttpOnly cookie prevents direct JS reading but still requires CSRF and other session protections.",
+      "interview": "HTTP messages are stateless; cookies or tokens help identify users across requests, while JSON carries request/response data.",
+      "warning": "HttpOnly helps against token reading by XSS but does not make XSS or CSRF irrelevant.",
+      "focus": true
+    },
+    {
+      "id": "ts-types",
+      "topic": "TypeScript",
+      "title": "1. Why unknown is safer than any",
+      "scenario": "A customer wants to order coffee. They send quantity = -3. Our API must decide if this should be accepted.",
+      "explanation": "TypeScript checks the types in code before JavaScript runs. But a request from the internet is a real value that TypeScript cannot inspect beforehand. The type any means 'don't check how I use this value', so errors can slip through. unknown means 'I haven't checked it yet', so TypeScript makes us verify it before doing arithmetic. After checking the type, we must also check the business rule: an order quantity must be a positive integer. This is why a number like -3 can have the correct type and still be invalid for our shop. The example below compiles successfully: it rejects -3 at runtime rather than producing a TypeScript compilation error.",
+      "code": "const quantity: unknown = -3;\n\nif (\n  typeof quantity === \"number\" &&\n  Number.isInteger(quantity) &&\n  quantity > 0\n) {\n  console.log(\"Order accepted\");\n} else {\n  console.log(\"Order rejected\");\n}",
+      "walk": [
+        "unknown allows the value -3 to be stored without claiming we know how to use it.",
+        "typeof quantity === 'number' is true: -3 is a JavaScript number.",
+        "Number.isInteger(quantity) is true: -3 has no fractional part.",
+        "quantity > 0 is false: the shop must not sell a negative number of bags.",
+        "The conditions use &&, meaning AND. Because one condition is false, the else branch runs and prints Order rejected."
+      ],
+      "quiz": {
+        "question": "What happens with quantity = -3?",
+        "answers": [
+          "The checked code fails to compile because quantity is unknown",
+          "Order accepted, because -3 has the number type",
+          "Order rejected, because -3 is not positive"
+        ],
+        "correct": 2,
+        "feedback": "The code compiles. The type check succeeds, but the positivity test fails, so the else branch prints Order rejected.",
+        "optionFeedback": [
+          "The typeof guard makes the comparison legal.",
+          "Having the number type doesn't make -3 positive.",
+          "Correct: the AND condition fails on positivity."
+        ]
+      },
+      "exercise": "Replace -3 with the string \"5\". Will it be accepted? Think about the first condition before looking at the solution.",
+      "solution": "It is rejected. typeof \"5\" is 'string', so the first condition is false. With &&, later checks are not evaluated. A value can look like a number without being one.",
+      "interview": "I use unknown at API boundaries. I validate both the runtime type and business rules before passing data to my service.",
+      "warning": "Writing `const q = req.body.quantity as number` does not validate real input; it only tells the compiler to trust you.",
+      "module": "ts",
+      "focus": true
+    },
+    {
+      "id": "ts-unions",
+      "topic": "TypeScript",
+      "title": "2. Unions and never: model payments safely",
+      "scenario": "Our checkout accepts either credit cards or bank transfers. A card needs a token. A bank transfer needs an IBAN. A single object with optional fields could accidentally accept a card without a token.",
+      "explanation": "A union connects different allowed shapes with the | symbol, meaning OR. A discriminated union gives each shape a shared label, such as method, whose value indicates which shape we have. In the card case, TypeScript knows cardToken exists; in the bank case, it knows iban exists. The never type is especially useful in an exhaustive switch: after all valid variants are handled, there should be nothing left. If we add a third payment method and forget to implement it, the never assignment can cause a compiler error. This is different from runtime validation: incoming JSON still needs checking.",
+      "code": "type Payment =\n  | { method: \"card\"; cardToken: string }\n  | { method: \"bank\"; iban: string };\n\nfunction description(p: Payment): string {\n  switch (p.method) {\n    case \"card\": return \"Token: \" + p.cardToken;\n    case \"bank\": return \"IBAN: \" + p.iban;\n    default:\n      const impossible: never = p;\n      return impossible;\n  }\n}",
+      "walk": [
+        "The first branch requires method = card and cardToken.",
+        "The second branch requires method = bank and iban.",
+        "Checking p.method lets TypeScript narrow the permitted properties in each branch.",
+        "When both cases are handled, the default branch should never run.",
+        "If you add a new cash variant without handling it, assigning p to never reports the missing case."
+      ],
+      "quiz": {
+        "question": "What is the purpose of the never check?",
+        "answers": [
+          "To guarantee a valid payment always fails.",
+          "To report forgotten variants when the union changes.",
+          "To convert a bank transfer into a card."
+        ],
+        "correct": 1,
+        "feedback": "An exhaustive never check helps the compiler detect unhandled variants after the model changes.",
+        "optionFeedback": [
+          "never doesn't make runtime payment choices.",
+          "Correct: exhaustive checking catches new variants.",
+          "Types do not automatically validate incoming JSON."
+        ]
+      },
+      "exercise": "Add `{ method: 'cash' }` to Payment. Which new switch branch should you write?",
+      "solution": "Add `| { method: 'cash' }` to the union and `case 'cash': return 'Pay in cash';` to the switch.",
+      "interview": "Discriminated unions represent mutually exclusive business states. I narrow by the tag and use never to catch unhandled variants.",
+      "warning": "Making cardToken and iban optional in one interface permits invalid combinations. The union is safer.",
+      "module": "ts",
+      "focus": true
+    },
+    {
+      "id": "ts-async",
+      "topic": "TypeScript",
+      "title": "3. async/await and Promise.all",
+      "scenario": "The dashboard needs a user's profile and their recent orders. Should the API load the user first and only then ask for orders?",
+      "explanation": "An async function always returns a Promise. await means 'continue after this Promise settles', not 'run this code on another CPU'. If two I/O operations are independent, you can start them together with Promise.all, which is usually faster than waiting for one before starting the next. If one Promise rejects, the combined Promise rejects, but the other operation is NOT automatically cancelled. Use try/catch to handle errors, and consider allSettled when you can show partial results. CPU-heavy JavaScript still blocks Node's event loop, even inside an async function.",
+      "code": "async function loadDashboard(id: string) {\n  try {\n    const [user, orders] = await Promise.all([\n      userRepo.findById(id),\n      orderRepo.findByUser(id)\n    ]);\n    return { user, orders };\n  } catch (error) {\n    console.error(\"Dashboard failed\", error);\n    throw error;\n  }\n}",
+      "walk": [
+        "Both repository methods return Promises from independent database I/O.",
+        "Promise.all waits for both results; the array positions are preserved.",
+        "Destructuring assigns the first response to user and second to orders.",
+        "If either rejects, catch handles the failure and rethrows it.",
+        "For optional dashboard sections, Promise.allSettled lets each section succeed or fail independently."
+      ],
+      "quiz": {
+        "question": "What happens to the second request if the first rejects?",
+        "answers": [
+          "It is automatically cancelled.",
+          "It can continue running.",
+          "Node immediately stops the process."
+        ],
+        "correct": 1,
+        "feedback": "Promise.all rejects its aggregate Promise, but it doesn't automatically cancel sibling work.",
+        "optionFeedback": [
+          "Promise.all does not cancel its siblings.",
+          "Correct: other operations can continue.",
+          "It doesn't impose that settling order."
+        ]
+      },
+      "exercise": "If recommendations are optional but order history is required, would you load both with Promise.all or handle them separately?",
+      "solution": "Handle the required order history reliably, and use Promise.allSettled or separate error handling for optional recommendations so a recommendation failure doesn't break the page.",
+      "interview": "I use async/await to handle I/O without blocking the event loop, and Promise.all for independent all-required operations.",
+      "warning": "Do not use Promise.all for a very large number of database queries without considering connection-pool limits.",
+      "module": "ts",
+      "focus": true
+    },
+    {
+      "id": "ts-generics",
+      "module": "ts",
+      "topic": "TypeScript foundations",
+      "title": "Generics and interfaces: reuse code without losing safety",
+      "scenario": "You have Product[] and User[] arrays. You want a helper that returns the first item. Why shouldn't its return type just be any?",
+      "explanation": "An interface describes the properties an object should have. A generic function uses a type parameter, often called T, so the compiler remembers the relationship between input values and output values. If you pass Product[], T becomes Product, and the result is Product | undefined. If you pass string[], T becomes string. Without a generic, returning any means you lose the relationship and might attempt nonexistent properties. `extends` can place constraints on a generic. These are compile-time features: they cannot verify that real JSON sent by a stranger is correct.",
+      "code": "interface Product { id: string; name: string }\nfunction first<T>(items: T[]): T | undefined {\n  return items[0];\n}\nconst products: Product[] = [{id:\"p1\",name:\"Coffee\"}];\nconst product = first(products);\nif (product) console.log(product.name);\nconst city = first([\"Paris\", \"Angers\"]);",
+      "walk": [
+        "Product describes the expected object shape.",
+        "T is inferred as Product when you pass the products array.",
+        "T | undefined models the possibility of an empty array.",
+        "The if guard checks that product is not undefined.",
+        "The same function then works for strings while preserving string as the result type."
+      ],
+      "quiz": {
+        "question": "Why does first<T> return T | undefined?",
+        "answers": [
+          "Because array index 0 might not exist",
+          "Because T is always a string",
+          "Because TypeScript can't use arrays"
+        ],
+        "correct": 0,
+        "feedback": "The array may be empty, so the first value may not exist.",
+        "optionFeedback": [
+          "Correct: empty arrays have no first element.",
+          "Generic T can represent many element types.",
+          "Generics keep inferred types instead of widening all to unknown."
+        ]
+      },
+      "exercise": "Modify first to return the last item of an array.",
+      "solution": "Use `return items[items.length - 1];` and keep the result type T | undefined because the array can be empty.",
+      "interview": "Generics preserve a relationship between inputs and outputs. Interfaces specify the expected properties of objects.",
+      "warning": "Generic types don't validate untrusted network data; use runtime validation for it.",
+      "focus": false
+    },
+    {
+      "id": "ts-zod",
+      "module": "ts",
+      "topic": "TypeScript foundations",
+      "title": "Runtime validation with Zod at API boundaries",
+      "scenario": "A customer sends `{quantity: -5}` or `{quantity: 'five'}`. A TypeScript interface alone can't stop it because the type checker is gone when the server runs.",
+      "explanation": "Runtime validation means checking actual values while the program executes. Libraries such as Zod let you declare a schema and parse unknown input into a known safe shape. A TypeScript type assertion like `as CreateOrder` does not transform or validate a value. `safeParse` reports success or failure, so the controller can return an HTTP 400 response rather than throwing blindly. Validation protects the HTTP boundary, and domain/database constraints provide additional defense for business-critical rules. For example, quantity must be an integer greater than zero.",
+      "code": "import { z } from \"zod\";\nconst OrderInput = z.object({\n  productId: z.string().min(1),\n  quantity: z.number().int().positive()\n});\nfunction accept(body: unknown) {\n  const parsed = OrderInput.safeParse(body);\n  if (!parsed.success) return { status: 400 };\n  return placeOrder(parsed.data);\n}",
+      "walk": [
+        "The schema requires a nonempty productId and a positive integer quantity.",
+        "The body begins as unknown because external requests cannot be trusted.",
+        "safeParse returns an object describing success or failure.",
+        "On failure the API returns an invalid-input response.",
+        "On success, parsed.data has validated values and a useful inferred TypeScript type."
+      ],
+      "quiz": {
+        "question": "Will `req.body as OrderInput` reject negative quantities at runtime?",
+        "answers": [
+          "Yes",
+          "No, it is a compiler assertion",
+          "Only when using PostgreSQL"
+        ],
+        "correct": 1,
+        "feedback": "An as assertion provides no runtime check. A schema parser does.",
+        "optionFeedback": [
+          "Type assertions don't run validation.",
+          "Correct: as only changes compile-time checking.",
+          "Input format doesn't make an assertion a parser."
+        ]
+      },
+      "exercise": "What would happen if quantity = 1.5?",
+      "solution": "It fails `int()` because 1.5 is not an integer. A valid quantity must also be positive.",
+      "interview": "I validate untrusted HTTP input at runtime and keep important business invariants in the domain and database.",
+      "warning": "Zod validation is not a replacement for authorization or concurrency-safe database operations.",
+      "focus": true
+    },
+    {
+      "id": "node-event",
+      "module": "node",
+      "topic": "Node.js & NestJS",
+      "title": "The Node.js event loop: why async does not fix CPU blocking",
+      "scenario": "A customer asks for their orders while another API route starts calculating millions of numbers. Why can the small orders request become slow?",
+      "explanation": "Node.js typically runs your JavaScript callbacks on an event-loop thread and coordinates asynchronous I/O using the runtime. await allows one async function to pause while a database or network call is pending, so other callbacks can progress. But a giant synchronous loop still occupies the JavaScript thread even if its containing function is marked async. Promise.all can overlap independent I/O, not magically make CPU-heavy JavaScript run in parallel cores. Use worker threads or a background service for substantial CPU-bound work.",
+      "code": "// Problem: synchronous CPU work blocks callbacks.\napp.get(\"/compute\", async (_req,res) => {\n  let sum = 0;\n  for(let i=0;i<1e9;i++) sum += i;\n  res.json({sum});\n});\n// Better pattern for normal I/O:\napp.get(\"/orders\", async (_req,res) => {\n  const rows = await orderRepo.findAll();\n  res.json(rows);\n});",
+      "walk": [
+        "The async keyword makes the handler return a Promise; it doesn't move its loop off-thread.",
+        "The for loop runs synchronously and can delay other requests.",
+        "The repository call waits for asynchronous database I/O.",
+        "While awaiting I/O, the event loop can process unrelated callbacks.",
+        "For heavy computations, use worker threads or separate job workers."
+      ],
+      "quiz": {
+        "question": "Would wrapping the loop in Promise.resolve().then(...) prevent blocking?",
+        "answers": [
+          "Yes, because Promise callbacks run on separate CPU workers",
+          "No, the synchronous loop still runs on the event-loop thread",
+          "Yes, because async automatically makes CPU work parallel"
+        ],
+        "correct": 1,
+        "feedback": "Scheduling code as a Promise microtask does not move its CPU work to another thread.",
+        "optionFeedback": [
+          "Microtasks are not separate CPU workers.",
+          "Correct: the loop still blocks the event loop.",
+          "async does not move CPU operations onto workers."
+        ]
+      },
+      "exercise": "Give one example of I/O-bound work and one CPU-bound task.",
+      "solution": "I/O: waiting for PostgreSQL or an HTTP response. CPU: processing a large image or calculating cryptographic hashes in synchronous JavaScript.",
+      "interview": "Node's event loop handles I/O efficiently, but long synchronous CPU work needs a worker or another process.",
+      "warning": "Do not use Promise.all over hundreds of database calls without monitoring pool limits.",
+      "focus": true
+    },
+    {
+      "id": "node-nest",
+      "module": "node",
+      "topic": "Node.js & NestJS",
+      "title": "NestJS: modules, controllers, services, pipes and guards",
+      "scenario": "The POST /orders endpoint must validate quantities, check logged-in users, and save the order. Where does each part belong?",
+      "explanation": "NestJS supplies structure for larger TypeScript backends. A module declares related controllers and providers. A controller maps HTTP routes and adapts the request and response. An injectable service coordinates use cases. A pipe validates or transforms input (for example, a Zod or class-validator DTO); a guard decides whether a request may proceed; an interceptor wraps request processing for cross-cutting behavior. Dependency injection lets you replace a real repository with a fake in a test. The business rule 'do not oversell' still belongs in trusted application/domain logic, backed by safe database behavior.",
+      "code": "@Injectable()\nclass OrdersService {\n  constructor(private readonly repo: OrdersRepo) {}\n  create(input: CreateOrderDto) {\n    return this.repo.save(input);\n  }\n}\n@Controller(\"orders\")\nclass OrdersController {\n  constructor(private readonly orders: OrdersService) {}\n  @Post() create(@Body() dto: CreateOrderDto) {\n    return this.orders.create(dto);\n  }\n}\n// OrdersModule registers controllers/providers.",
+      "walk": [
+        "The @Controller decorator maps a class to /orders.",
+        "@Post maps the method to POST /orders.",
+        "@Body obtains request data; configure a runtime validation pipe separately.",
+        "OrdersService coordinates application work and depends on an injected repository.",
+        "The module wires providers; guards and pipes can enforce authorization and validation at boundaries."
+      ],
+      "quiz": {
+        "question": "Which NestJS building block should check whether the caller can access a route?",
+        "answers": [
+          "Guard",
+          "Pipe only",
+          "Database column"
+        ],
+        "correct": 0,
+        "feedback": "A guard is a route-access mechanism; resource-level authorization must still be enforced in the business flow.",
+        "optionFeedback": [
+          "Correct: guards decide route access.",
+          "Pipes validate inputs, not identity.",
+          "Interceptors aren't general route authorization."
+        ]
+      },
+      "exercise": "How would you unit-test OrdersService without a database?",
+      "solution": "Inject a fake OrdersRepo and verify the service calls it with the validated input or produces the expected result.",
+      "interview": "Nest controllers adapt HTTP; providers handle use cases; guards authorize and pipes validate.",
+      "warning": "A TypeScript DTO alone does not validate incoming JSON unless runtime validation is configured.",
+      "focus": true
+    },
+    {
+      "id": "api-design",
+      "topic": "API design",
+      "title": "7. REST: designing a clear orders API",
+      "scenario": "Your frontend must list orders, create orders, and view one order. Which URL should it call, and what should the response mean?",
+      "explanation": "An API is a contract between programs. REST-style APIs commonly use resource nouns in their URLs, such as /orders, and standard HTTP methods to describe operations. GET reads without intentionally changing state. POST submits or creates. PUT replaces a resource idempotently; PATCH updates part of it. HTTP status codes tell the client what happened: 200 for success, 201 for a new resource, 202 for accepted work not yet finished, 400 for invalid input, 401 when authentication is missing or invalid, 403 when permission is denied, 404 when the resource is absent, and 409 for conflict. Always check ownership: knowing an order ID does not mean a user should be allowed to read it.",
+      "code": "GET    /orders          -> 200 OK\nGET    /orders/42       -> 200 or 404\nPOST   /orders          -> 201 Created\nPATCH  /orders/42       -> 200 or 204\nDELETE /orders/42       -> 204\n\nPOST /orders\n{\"productId\":\"coffee\",\"quantity\":2}\n\nHTTP/1.1 201 Created\nLocation: /orders/43",
+      "walk": [
+        "The collection path /orders refers to all orders or to creating a new one.",
+        "/orders/42 addresses a specific order.",
+        "POST /orders accepts validated request data and creates a record.",
+        "201 Created communicates that a new order exists, and Location can point to it.",
+        "The server authenticates the caller and checks authorization for each order.",
+        "Errors should have meaningful 4xx or 5xx responses, not always 200."
+      ],
+      "quiz": {
+        "question": "A successfully created new order should normally return which status?",
+        "answers": [
+          "201 Created",
+          "401 Unauthorized",
+          "404 Not Found"
+        ],
+        "correct": 0,
+        "feedback": "201 Created directly expresses that a new resource was created.",
+        "optionFeedback": [
+          "200 is generic; 201 explicitly says created.",
+          "Correct: a resource was created.",
+          "202 says accepted, potentially still processing."
+        ]
+      },
+      "exercise": "Should a user with a valid JWT be allowed to read any order ID?",
+      "solution": "No. Authentication establishes identity, not resource authorization. Scope queries to orders owned by the authenticated user or tenant.",
+      "interview": "I choose resource-based URLs and meaningful HTTP semantics; I validate requests, check authorization per resource, and document errors.",
+      "warning": "401 and 403 are different. A valid token does not grant permission to other people's data.",
+      "module": "api",
+      "focus": true
+    },
+    {
+      "id": "api-openapi",
+      "module": "api",
+      "topic": "API design & protocols",
+      "title": "OpenAPI, predictable errors and contract evolution",
+      "scenario": "Your frontend works, but a mobile app and external partner also need the API. How do they know required fields, expected errors and safe updates?",
+      "explanation": "An API contract documents routes, methods, parameter types, request bodies, response shapes and error behavior. OpenAPI is a widely used machine-readable way to describe HTTP APIs and generate documentation or clients. Choose stable, consistent error responses so callers can distinguish bad input from missing authentication or conflicts. Prefer compatible additive changes, such as adding optional response fields, over renaming required fields without a migration. Never assume TypeScript compile-time types alone validate actual network inputs.",
+      "code": "# Conceptual OpenAPI excerpt\npaths:\n  /orders:\n    post:\n      responses:\n        \"201\":\n          description: Order created\n        \"400\":\n          description: Invalid request\n        \"409\":\n          description: Inventory conflict\n# Document request schema and auth too.",
+      "walk": [
+        "/orders with post identifies the operation being documented.",
+        "The 201 response represents successful resource creation.",
+        "A 400 response represents validation failure.",
+        "A 409 response can express a state conflict when appropriate.",
+        "Clients can generate types or SDKs from the OpenAPI schema, while the server still validates real input."
+      ],
+      "quiz": {
+        "question": "Does generating a TypeScript client from OpenAPI prove that arbitrary incoming JSON is valid?",
+        "answers": [
+          "Yes, generated TypeScript types validate all incoming JSON",
+          "No, generated types are compile-time; runtime checks are separate",
+          "Yes, JSON.parse always validates against OpenAPI"
+        ],
+        "correct": 1,
+        "feedback": "Generated types support development, but runtime data still needs checks.",
+        "optionFeedback": [
+          "Generated types don't inspect arbitrary runtime values.",
+          "Correct: validation remains separate.",
+          "JSON.parse only checks JSON syntax."
+        ]
+      },
+      "exercise": "Name two compatible API evolution techniques.",
+      "solution": "Add optional response fields and support old request fields during a deprecation window. Test real client compatibility before removing fields.",
+      "interview": "I use OpenAPI to document contracts across consumers, with consistent errors and deliberate compatibility management.",
+      "warning": "Don't remove required fields or change their meaning without a versioning/deprecation strategy.",
+      "focus": false
+    },
+    {
+      "id": "api-protocols",
+      "module": "api",
+      "topic": "API design & protocols",
+      "title": "REST vs tRPC vs gRPC: choosing based on consumers",
+      "scenario": "Your web app uses TypeScript, your fulfillment service uses Go, and business partners call your public API. Which API style fits each relationship?",
+      "explanation": "REST-style APIs use HTTP resources and common methods, and are broadly accessible by browsers, mobile clients and partners. tRPC derives client types from a TypeScript server router, which can greatly simplify a closely coupled TypeScript frontend/backend. gRPC uses explicit Protobuf service contracts with generated clients across languages such as Go and TypeScript. gRPC has useful streaming and contract tooling, but it adds another protocol/operational layer. These are alternatives for transport; the same business use case can sit behind multiple adapters. Choose on real requirements, not a claim that one protocol is always superior.",
+      "code": "// REST for a public partner\nGET /orders/42\n\n// tRPC for a TS frontend and backend\ntrpc.orders.get.query({id:\"42\"})\n\n// gRPC for explicit Go ↔ TypeScript contracts\nservice Orders {\n  rpc GetOrder(GetOrderRequest) returns (Order);\n}\nmessage GetOrderRequest { string id = 1; }",
+      "walk": [
+        "REST uses HTTP resource URLs; OpenAPI can document them.",
+        "tRPC exposes typed procedures inferred across TypeScript client/server.",
+        "gRPC uses methods defined in a .proto schema and generates language-specific client code.",
+        "A Protobuf field number is part of wire compatibility; don't casually reuse it.",
+        "Cross-language consumers, browser access and developer tooling influence the decision."
+      ],
+      "quiz": {
+        "question": "Which option is naturally suited to an explicit Go ↔ TypeScript service contract?",
+        "answers": [
+          "gRPC with a shared Protobuf service contract",
+          "tRPC based only on inferred TypeScript types",
+          "REST without a defined schema or versioning plan"
+        ],
+        "correct": 0,
+        "feedback": "Protobuf/gRPC has language-neutral contracts and generated clients for both languages.",
+        "optionFeedback": [
+          "Correct: Protobuf describes cross-language RPCs.",
+          "TS inference doesn't directly provide Go contracts.",
+          "Unspecified schemas weaken explicit typed contracts."
+        ]
+      },
+      "exercise": "Would you expose tRPC as the only API for third-party Python clients? Why or why not?",
+      "solution": "Usually not without a separate compatible contract; tRPC's main advantage is TypeScript inference, while REST/OpenAPI or gRPC/Protobuf better support mixed-language consumers.",
+      "interview": "I choose API transports by consumer needs: REST for broad interoperability, tRPC for shared TypeScript, and gRPC for explicit cross-language RPC.",
+      "warning": "Don't assume an API protocol removes authentication, authorization or compatibility needs.",
+      "focus": false
+    },
+    {
+      "id": "sql-join",
+      "topic": "PostgreSQL / SQL",
+      "title": "4. JOIN: understand two tables visually",
+      "scenario": "customers has Ana and Sam. orders has two orders from Ana and none from Sam. We need to display customer names beside their orders.",
+      "explanation": "A relational database stores information in separate tables. customers has an id and name. orders has a customer_id pointing to customers.id. JOIN connects rows whose keys match. INNER JOIN returns only matching customer/order pairs. LEFT JOIN keeps every customer even when no order exists, producing NULL in order fields. One important detail: if Ana has two matching orders, she appears twice in the JOIN result. A JOIN does not automatically aggregate rows; that is what GROUP BY and aggregate functions are for.",
+      "code": "-- customers\n-- id | name\n--  1 | Ana\n--  2 | Sam\n\n-- orders\n-- id  | customer_id | total_cents\n-- 101 | 1           | 1200\n-- 102 | 1           | 2500\n\nSELECT c.name, o.total_cents\nFROM customers c\nINNER JOIN orders o ON o.customer_id = c.id;\n-- Ana | 1200\n-- Ana | 2500",
+      "walk": [
+        "c and o are aliases so SQL can distinguish columns from the two tables.",
+        "ON o.customer_id = c.id is the relationship between the tables.",
+        "INNER JOIN matches both of Ana's orders, producing two result rows.",
+        "Sam has no order, so there is no matching row and Sam does not appear.",
+        "Switch to LEFT JOIN starting from customers to retain Sam with NULL order fields."
+      ],
+      "quiz": {
+        "question": "Which JOIN includes Sam even if he has never ordered?",
+        "answers": [
+          "INNER JOIN",
+          "LEFT JOIN from customers",
+          "CROSS JOIN only"
+        ],
+        "correct": 1,
+        "feedback": "LEFT JOIN preserves the rows from its left-hand table, so Sam appears with NULL order fields.",
+        "optionFeedback": [
+          "INNER JOIN drops unmatched customers.",
+          "Correct: customers stay on the left.",
+          "Starting from orders drops customers with no orders."
+        ]
+      },
+      "exercise": "How many rows are returned for Ana in the INNER JOIN example?",
+      "solution": "Two rows—one per matching order. Joining doesn't group the data by customer.",
+      "interview": "I choose INNER JOIN for required matches and LEFT JOIN when unmatched records should still appear.",
+      "warning": "A WHERE filter on right-hand table columns after a LEFT JOIN may unintentionally remove NULL rows.",
+      "module": "sql",
+      "focus": true
+    },
+    {
+      "id": "sql-group",
+      "topic": "PostgreSQL / SQL",
+      "title": "5. GROUP BY, WHERE and HAVING",
+      "scenario": "The shop manager asks: which customers placed at least three paid orders, and how much did they spend?",
+      "explanation": "SELECT chooses output columns. WHERE filters individual rows before they are grouped. GROUP BY combines rows with the same customer_id. COUNT(*) counts rows in each group, and SUM adds their amounts. HAVING filters the aggregate groups after counting. That is why you use HAVING COUNT(*) >= 3 rather than WHERE COUNT(*) >= 3. ORDER BY sorts the final results. Read the SQL from the data's journey: filter paid orders, make one group per customer, compute counts/totals, keep groups with at least three paid orders, then sort.",
+      "code": "SELECT\n  customer_id,\n  COUNT(*) AS paid_orders,\n  SUM(total_cents) AS spent_cents\nFROM orders\nWHERE status = 'paid'\nGROUP BY customer_id\nHAVING COUNT(*) >= 3\nORDER BY spent_cents DESC;",
+      "walk": [
+        "FROM orders starts with all order records.",
+        "WHERE status = paid removes pending and failed orders.",
+        "GROUP BY customer_id creates one group per customer.",
+        "COUNT(*) and SUM(total_cents) calculate each group's values.",
+        "HAVING COUNT(*) >= 3 keeps only customers with at least three paid orders.",
+        "ORDER BY spent_cents DESC ranks the remaining customers by spending."
+      ],
+      "quiz": {
+        "question": "Why can't you put COUNT(*) >= 3 in WHERE?",
+        "answers": [
+          "WHERE operates before aggregation.",
+          "WHERE is slower than HAVING.",
+          "COUNT only works in Python."
+        ],
+        "correct": 0,
+        "feedback": "WHERE filters individual input rows, while HAVING filters grouped, aggregated results.",
+        "optionFeedback": [
+          "Correct: WHERE runs before groups are formed.",
+          "HAVING handles grouped results, not just speed.",
+          "COUNT(*) is a valid SQL aggregate."
+        ]
+      },
+      "exercise": "Change the query to find customers with at least five paid orders.",
+      "solution": "Change HAVING COUNT(*) >= 3 to HAVING COUNT(*) >= 5. The rest of the query stays the same.",
+      "interview": "WHERE filters rows; GROUP BY aggregates them; HAVING filters groups. I use COUNT, SUM and other aggregates to calculate per-customer metrics.",
+      "warning": "When you use GROUP BY, nonaggregated selected columns usually need to be grouping keys.",
+      "module": "sql",
+      "focus": false
+    },
+    {
+      "id": "sql-transaction",
+      "topic": "PostgreSQL / SQL",
+      "title": "6. Transactions: two customers buy the last item",
+      "scenario": "Only one coffee machine remains. Two customers press Buy at nearly the same moment. Both might read stock = 1. We must not oversell.",
+      "explanation": "A transaction groups database writes so they commit together or are rolled back together. But a separate SELECT followed by an UPDATE can still race, depending on isolation and locking. A practical inventory pattern is an atomic conditional UPDATE: decrease stock only when stock is currently positive, then check whether the UPDATE affected a row. PostgreSQL coordinates conflicting updates to the same inventory row. If the reservation succeeds, create the order in the same transaction; otherwise roll back and return sold out. External payment calls must be handled separately because a database rollback cannot reverse a card charge.",
+      "code": "BEGIN;\n\nUPDATE inventory\nSET available = available - 1\nWHERE product_id = 42 AND available > 0\nRETURNING available;\n\n-- If no row returned: ROLLBACK.\n-- Only after a successful reservation:\nINSERT INTO orders(product_id, status)\nVALUES (42, 'PENDING_PAYMENT');\n\nCOMMIT;",
+      "walk": [
+        "BEGIN starts a transaction so the stock change and order creation can succeed or fail together.",
+        "The WHERE available > 0 condition is checked inside the UPDATE.",
+        "RETURNING tells the application whether stock was actually reserved.",
+        "If zero rows return, the application must stop, roll back and report sold out.",
+        "If INSERT fails, ROLLBACK undoes the earlier stock change.",
+        "If both succeed, COMMIT makes the order and reservation durable."
+      ],
+      "quiz": {
+        "question": "The UPDATE returns zero rows. What should the backend do?",
+        "answers": [
+          "Insert the order anyway.",
+          "Roll back and report sold out.",
+          "Charge the customer first."
+        ],
+        "correct": 1,
+        "feedback": "Without a successful reservation you must not create an order for unavailable stock.",
+        "optionFeedback": [
+          "No reservation means no order should be inserted.",
+          "Correct: roll back when no row was reserved.",
+          "Charging cannot repair missing stock."
+        ]
+      },
+      "exercise": "What happens if the stock UPDATE succeeds but INSERT INTO orders fails?",
+      "solution": "ROLLBACK undoes the inventory decrement because the two writes are in the same PostgreSQL transaction.",
+      "interview": "I use an atomic conditional update with affected-row checking to prevent overselling, and I wrap the reservation and order write in a transaction.",
+      "warning": "Don't claim a PostgreSQL transaction can atomically roll back a payment provider charge.",
+      "module": "sql",
+      "focus": true
+    },
+    {
+      "id": "sql-schema",
+      "module": "sql",
+      "topic": "SQL & PostgreSQL",
+      "title": "Schema design: keys, constraints and relationships",
+      "scenario": "You need tables for customers, products and orders. What stops one customer ID from pointing to no customer, or two products having the same SKU?",
+      "explanation": "A relational schema defines tables, columns, and rules the database enforces. A primary key identifies each row. A foreign key links an order to a valid customer. UNIQUE prevents duplicate values for a chosen key, while NOT NULL rejects missing values, and CHECK enforces simple conditions like nonnegative stock. Application validation is useful for friendly errors, but database constraints are especially valuable under concurrency because every writer must obey them. Normalize core tables to avoid repeating data unnecessarily, and create indexes based on important queries rather than every column.",
+      "code": "CREATE TABLE customers (\n  id BIGINT PRIMARY KEY,\n  email TEXT NOT NULL UNIQUE\n);\nCREATE TABLE products (\n  id BIGINT PRIMARY KEY,\n  sku TEXT NOT NULL UNIQUE,\n  stock INT NOT NULL CHECK(stock>=0)\n);\nCREATE TABLE orders (\n  id BIGINT PRIMARY KEY,\n  customer_id BIGINT NOT NULL REFERENCES customers(id)\n);",
+      "walk": [
+        "id is a primary key, meaning it uniquely identifies a row.",
+        "UNIQUE(email) rejects duplicate customer emails.",
+        "CHECK(stock>=0) protects the stock invariant in every write path.",
+        "REFERENCES customers(id) enforces a valid customer relationship.",
+        "The database does not automatically enforce every complex workflow invariant; use transactions and domain logic too."
+      ],
+      "quiz": {
+        "question": "Which constraint ensures an order references an existing customer?",
+        "answers": [
+          "Foreign key",
+          "ORDER BY",
+          "LIMIT"
+        ],
+        "correct": 0,
+        "feedback": "A foreign key enforces the relationship to a referenced customer row.",
+        "optionFeedback": [
+          "Correct: a foreign key checks referenced rows.",
+          "An index helps access, not referential integrity.",
+          "Uniqueness of totals is unrelated to customer existence."
+        ]
+      },
+      "exercise": "How would you prevent negative stock if someone writes directly to the database?",
+      "solution": "Add a CHECK constraint such as CHECK(stock >= 0), along with atomic update logic for concurrent reservations.",
+      "interview": "I use PK/FK/UNIQUE/CHECK constraints to protect relational integrity and business invariants.",
+      "warning": "A check in JavaScript before INSERT is not a substitute for a UNIQUE constraint during races.",
+      "focus": true
+    },
+    {
+      "id": "sql-index",
+      "module": "sql",
+      "topic": "SQL & PostgreSQL",
+      "title": "Indexes and EXPLAIN ANALYZE: fix a slow query",
+      "scenario": "The orders table has 5 million rows. GET /orders?customer=42&status=paid takes two seconds even though it returns only the newest 20 orders.",
+      "explanation": "A PostgreSQL B-tree index organizes searchable keys so the database can often locate matching rows faster. A composite index can serve a query that filters by customer and status and orders results by creation date. But indexes are not free: each one takes disk space and costs work on inserts and updates. Use EXPLAIN (ANALYZE, BUFFERS) to see real execution timing, scanned rows, and page activity. Verify a proposed index with representative data and measured results; a sequential scan can be faster for tiny tables or unselective queries.",
+      "code": "SELECT id,total_cents\nFROM orders\nWHERE customer_id=42 AND status='paid'\nORDER BY created_at DESC,id DESC LIMIT 20;\n\nCREATE INDEX idx_orders_lookup\nON orders(customer_id,status,created_at DESC,id DESC);\n\nEXPLAIN (ANALYZE,BUFFERS)\nSELECT id FROM orders WHERE customer_id=42\nAND status='paid'\nORDER BY created_at DESC,id DESC LIMIT 20;",
+      "walk": [
+        "The WHERE columns are equality filters and appear first in the candidate composite index.",
+        "created_at and id provide deterministic newest-first ordering.",
+        "LIMIT 20 avoids returning a huge response, though the query still needs efficient access.",
+        "EXPLAIN ANALYZE actually executes the query and measures it.",
+        "Compare the before/after execution plan rather than trusting that an index always improves performance."
+      ],
+      "quiz": {
+        "question": "Should you create an index on every database column?",
+        "answers": [
+          "Yes, always",
+          "No, indexes impose write/storage costs",
+          "Only on text"
+        ],
+        "correct": 1,
+        "feedback": "Indexes cost storage and write overhead; choose them for important measured query patterns.",
+        "optionFeedback": [
+          "More indexes can slow writes and cost space.",
+          "Correct: index measured query patterns.",
+          "Selectivity alone doesn't justify every index."
+        ]
+      },
+      "exercise": "What tools and measurements would you use to diagnose a slow query?",
+      "solution": "Use EXPLAIN (ANALYZE, BUFFERS), examine rows and scan types, investigate missing indexes or unnecessary sort/joins, and compare query latency before/after.",
+      "interview": "I design composite indexes around real query predicates and ordering, then validate using EXPLAIN ANALYZE.",
+      "warning": "EXPLAIN ANALYZE executes modifying statements too; avoid testing destructive queries outside a rollback.",
+      "focus": false
+    },
+    {
+      "id": "sql-isolation",
+      "module": "sql",
+      "topic": "SQL & PostgreSQL",
+      "title": "Concurrent transactions and write skew (doctors on call)",
+      "scenario": "Two doctors are available, and hospital policy requires at least one on call. Both read 'two available' and each marks a different doctor unavailable.",
+      "explanation": "This is write skew: concurrent transactions read a shared condition but update different rows, jointly violating a business rule. Row-level write conflicts may not detect the problem because each transaction modifies a different doctor. PostgreSQL SERIALIZABLE isolation aims to provide results consistent with some serial order, which can require aborting a transaction with SQLSTATE 40001. The application must retry the entire transaction, including all the original reads and decisions, not only its final UPDATE. External side effects must be kept outside retryable transaction work.",
+      "code": "-- Session A and B, concurrently\nBEGIN ISOLATION LEVEL SERIALIZABLE;\nSELECT COUNT(*) FROM doctors WHERE on_call=true;\n-- Both may initially read 2.\nUPDATE doctors SET on_call=false WHERE id=1;\n-- Session B uses WHERE id=2.\nCOMMIT;\n-- One transaction may fail with SQLSTATE 40001.",
+      "walk": [
+        "Each transaction reads the same count before changing a different row.",
+        "Under weaker isolation both might commit, leaving zero doctors.",
+        "SERIALIZABLE tracks conflicts in the transactions' read/write histories.",
+        "A serialization failure means that transaction did not commit and must be retried.",
+        "Retry the SELECT count and decision under a new transaction with bounded attempts."
+      ],
+      "quiz": {
+        "question": "After a serialization failure, what should you retry?",
+        "answers": [
+          "Only the UPDATE",
+          "The entire transaction including reads",
+          "A payment charge twice"
+        ],
+        "correct": 1,
+        "feedback": "The decision was based on a prior snapshot, so a safe retry must re-run the whole business transaction.",
+        "optionFeedback": [
+          "The prior read may now be stale.",
+          "Correct: retry all reads and decisions.",
+          "A failed transaction cannot just recommit."
+        ]
+      },
+      "exercise": "Explain why locking only the row each doctor updates may not protect the shared rule.",
+      "solution": "Each transaction locks a different row, so the shared invariant can still be violated. Serializable isolation or an explicit shared lock/invariant row can coordinate the decision.",
+      "interview": "Write skew is a cross-row concurrency problem; SERIALIZABLE plus full retries is a strong solution.",
+      "warning": "REPEATABLE READ in PostgreSQL does not prevent all write skew anomalies.",
+      "focus": true
+    },
+    {
+      "id": "sqlalchemy",
+      "topic": "Python / SQLAlchemy",
+      "title": "9. SQLAlchemy: models, Engine and Session",
+      "scenario": "In a Python backend, you want to save a product named Coffee and read it back from a database. What does an ORM actually do?",
+      "explanation": "SQLAlchemy is a Python database toolkit and ORM. ORM stands for Object-Relational Mapping: a Python class describes a table, and Python objects map to rows. The Engine handles how the application connects to the database. A Session tracks ORM objects, issues queries and coordinates transactions. session.add means 'track this object for persistence'; session.commit makes transaction changes durable. SQLAlchemy does not remove the need to understand SQL. Real projects still need constraints, indexes, migrations and awareness of N+1 queries. The example below uses SQLite only to simplify practice; a production service can use PostgreSQL.",
+      "code": "from sqlalchemy import create_engine, select, String\nfrom sqlalchemy.orm import DeclarativeBase, Mapped\nfrom sqlalchemy.orm import mapped_column, Session\n\nclass Base(DeclarativeBase): pass\nclass Product(Base):\n    __tablename__ = \"products\"\n    id: Mapped[int] = mapped_column(primary_key=True)\n    name: Mapped[str] = mapped_column(String(80))\n\nengine = create_engine(\"sqlite+pysqlite:///:memory:\")\nBase.metadata.create_all(engine)\nwith Session(engine) as session:\n    session.add(Product(name=\"Coffee\"))\n    session.commit()\n    items = session.scalars(select(Product)).all()\n    print(items[0].name) # Coffee",
+      "walk": [
+        "Product defines a table named products, with an ID and a name.",
+        "Engine knows how to communicate with a database; here it uses SQLite in memory.",
+        "create_all sets up missing tables for the demo; production uses migrations.",
+        "Session provides a scoped unit of database work.",
+        "add tells the Session to track a new Product object.",
+        "commit flushes writes and commits the transaction.",
+        "select(Product) loads rows as Product objects, and print displays Coffee."
+      ],
+      "quiz": {
+        "question": "Which call makes the insert durable?",
+        "answers": [
+          "session.add(), which always commits immediately",
+          "session.commit(), which flushes and commits pending changes",
+          "session.scalars(select(Product)), which commits writes"
+        ],
+        "correct": 1,
+        "feedback": "add tracks the new object; commit persists the transaction. Print only displays data.",
+        "optionFeedback": [
+          "add schedules ORM work but doesn't commit.",
+          "Correct: commit persists pending changes.",
+          "SELECT is not the transaction commit."
+        ]
+      },
+      "exercise": "Why should a production app use migrations instead of relying on create_all on every launch?",
+      "solution": "Migrations describe deliberate, reviewable changes to existing schemas. create_all is useful for demos but is not a complete schema evolution solution.",
+      "interview": "SQLAlchemy maps Python classes to database rows. I use Engines for connections and short-lived Sessions for transactions while still checking generated SQL and performance.",
+      "warning": "Do not share one mutable SQLAlchemy Session across unrelated concurrent requests.",
+      "module": "orm",
+      "focus": false
+    },
+    {
+      "id": "orm-nplus",
+      "module": "orm",
+      "topic": "ORMs & SQLAlchemy",
+      "title": "SQLAlchemy relationships, sessions and N+1 queries",
+      "scenario": "You load 100 orders in a Python API and access each order.customer.name. Suddenly you see 101 SQL queries instead of a few.",
+      "explanation": "SQLAlchemy ORM relationships can load related records lazily. If each order.customer property triggers another query, then one query for orders plus one per order produces the N+1 problem. It increases database round trips and makes endpoints slower as the number of rows grows. The selectinload option can batch related data; joinedload can use joins when appropriate. A SQLAlchemy Session is a unit of work and should be scoped to a request or job—not shared across unrelated concurrent tasks. Keep an eye on generated SQL even when the Python syntax looks clean.",
+      "code": "from sqlalchemy import select\nfrom sqlalchemy.orm import Session, selectinload\n\nstmt = (\n  select(Order)\n  .options(selectinload(Order.customer))\n  .limit(100)\n)\nwith Session(engine) as session:\n  orders = session.scalars(stmt).all()\n  for order in orders:\n    print(order.customer.name)",
+      "walk": [
+        "The initial select loads up to 100 orders.",
+        "selectinload tells SQLAlchemy to fetch related customers in batches.",
+        "Accessing order.customer.name can then reuse those loaded objects.",
+        "Without eager loading, each relationship access may trigger an additional SQL query.",
+        "Inspect actual SQL and compare performance; selectinload is not automatically best for every relationship."
+      ],
+      "quiz": {
+        "question": "What is the N+1 problem?",
+        "answers": [
+          "One query, then a query per item",
+          "A syntax error in SELECT",
+          "One transaction with two tables"
+        ],
+        "correct": 0,
+        "feedback": "N+1 describes many extra relationship queries when iterating over N entities.",
+        "optionFeedback": [
+          "Correct: lazy relations can trigger per-row queries.",
+          "A JOIN is a technique to avoid N+1.",
+          "Batch writes aren't the relationship N+1 problem."
+        ]
+      },
+      "exercise": "Would doubling the connection pool be the best fix for N+1?",
+      "solution": "No. It might mask symptoms or add DB pressure. Fetch related records efficiently with suitable eager loading/joins.",
+      "interview": "I inspect ORM-generated SQL and use appropriate eager loading to prevent N+1 database round trips.",
+      "warning": "An ORM does not automatically choose the optimal number of queries; performance still needs measurement.",
+      "focus": false
+    },
+    {
+      "id": "security-auth",
+      "module": "security",
+      "topic": "Backend security",
+      "title": "Authentication, sessions and JWT: who are you?",
+      "scenario": "A customer logs into the shop. The next request to GET /me needs to identify the same customer securely.",
+      "explanation": "Authentication verifies an identity. A server can keep an authenticated session and send a random session identifier in an HttpOnly, Secure cookie, or it can issue a signed access token such as a JWT. With a JWT, verify signature, allowed algorithm, expiration, issuer and audience rather than just decoding payload text. Passwords should be stored using an adaptive password hash, never plaintext. A user being authenticated does NOT mean they are authorized to read every order. Every endpoint still needs appropriate authorization checks.",
+      "code": "// Example session-cookie settings\nSet-Cookie: sid=<opaque-random-value>;\n  HttpOnly; Secure; SameSite=Lax; Path=/\n\n// Example auth workflow:\nPOST /login -> verify password hash\n             -> create session\nGET /me     -> read and verify session\n             -> return current user",
+      "walk": [
+        "A login request provides credentials to the trusted server.",
+        "The server verifies the password against a securely stored adaptive hash.",
+        "A random session ID links future requests to server-held session state.",
+        "HttpOnly reduces JavaScript access to the cookie; Secure requires HTTPS.",
+        "Later requests identify the user, but resource permissions must still be checked."
+      ],
+      "quiz": {
+        "question": "Does a signed JWT automatically authorize access to every order?",
+        "answers": [
+          "Yes",
+          "No, identity and permissions are different",
+          "Only when it is long"
+        ],
+        "correct": 1,
+        "feedback": "Authentication establishes identity; authorization checks access to resources.",
+        "optionFeedback": [
+          "Signature validity doesn't grant every permission.",
+          "Correct: check authorization per object.",
+          "Expiry and issuer alone don't authorize arbitrary rows."
+        ]
+      },
+      "exercise": "Why should you never store a plaintext password?",
+      "solution": "A database leak would reveal all passwords. Store a salted adaptive hash using a proven password hashing algorithm such as Argon2id or bcrypt with appropriate settings.",
+      "interview": "I verify identity securely with sessions or validated JWTs and separately enforce resource authorization.",
+      "warning": "Never treat decoding a JWT as signature verification or keep secrets in browser source code.",
+      "focus": true
+    },
+    {
+      "id": "security-authz",
+      "module": "security",
+      "topic": "Backend security",
+      "title": "Authorization and IDOR/BOLA: protect each order",
+      "scenario": "Customer Ana is logged in. She guesses Sam's order ID and calls GET /orders/999. The JWT is valid; should the server return the order?",
+      "explanation": "Authorization checks whether a specific user can perform an action on a specific resource. An authenticated user may still be forbidden from viewing another customer's invoice. This common API flaw is called broken object-level authorization (BOLA), sometimes described as insecure direct object reference (IDOR). Use the trusted user identity from authentication middleware to scope database queries to records they own or to tenants in which they have verified membership. Never trust a customerId supplied by the browser as proof that the caller is that customer.",
+      "code": "const userId = req.auth.userId; // verified by middleware\nconst order = await prisma.order.findFirst({\n  where: {\n    id: req.params.orderId,\n    customerId: userId\n  }\n});\nif (!order) return res.status(404).send();\nreturn res.json(order);",
+      "walk": [
+        "Authentication middleware verifies the caller and provides a trusted userId.",
+        "The requested order ID comes from the URL and is not proof of permission.",
+        "The database query requires order ID AND owner ID to match.",
+        "An unauthorized order does not pass the query filter.",
+        "Returning 404 can also avoid revealing whether another user's order exists."
+      ],
+      "quiz": {
+        "question": "What makes `findUnique({id: req.params.id})` risky in a multiuser API?",
+        "answers": [
+          "The query does not verify ownership or tenant membership",
+          "findUnique cannot look up globally unique IDs",
+          "A unique ID automatically grants permission to view the record"
+        ],
+        "correct": 0,
+        "feedback": "Looking up an arbitrary ID without checking permissions can leak data between users.",
+        "optionFeedback": [
+          "Correct: the owner/tenant filter is missing.",
+          "Unique IDs don't prove ownership.",
+          "A unique-key lookup targets one row, not all."
+        ]
+      },
+      "exercise": "How would you protect tenant-owned invoices?",
+      "solution": "Verify the authenticated user's tenant membership, then scope the invoice lookup by both invoice ID and that authorized tenant.",
+      "interview": "I perform object-level authorization on every protected resource, not just token validation.",
+      "warning": "Roles alone are not enough: an ADMIN role in one tenant may not grant access to another tenant.",
+      "focus": true
+    },
+    {
+      "id": "security-input",
+      "module": "security",
+      "topic": "Backend security",
+      "title": "SQL injection, input validation and secret handling",
+      "scenario": "A user types a name containing a quote into your search field. If you concatenate their text into a raw SQL statement, it might change the query's meaning.",
+      "explanation": "SQL injection happens when user input becomes executable SQL syntax rather than bound data. Parameterized queries separate the query structure from its values, so a malicious string is handled as data. Runtime schema validation adds another layer by rejecting wrong shapes and values, but does not replace parameters for SQL. Secrets such as database passwords and API keys belong in server-side environment variables or a secrets manager, not a frontend bundle. Also return safe errors without exposing connection strings or stack traces.",
+      "code": "// Unsafe - never do this:\nconst sql = \"SELECT * FROM users WHERE email='\" + email + \"'\";\n\n// Safe positional parameter in PostgreSQL:\nconst result = await client.query(\n  \"SELECT id FROM users WHERE email = $1\",\n  [email]\n);\n// Validate email format separately.\n// Read DB credentials from server environment.",
+      "walk": [
+        "In the unsafe version, input text is inserted directly into SQL syntax.",
+        "In the safe version, $1 is a placeholder for a value.",
+        "The database driver sends email as a bound parameter.",
+        "Schema validation rejects malformed values but is separate from SQL parameterization.",
+        "Errors and application logs should not leak credentials or sensitive fields."
+      ],
+      "quiz": {
+        "question": "What is the main defense against SQL injection in an ordinary query?",
+        "answers": [
+          "String concatenation",
+          "Parameterized SQL / bound values",
+          "A longer database password"
+        ],
+        "correct": 1,
+        "feedback": "Bind untrusted values as parameters rather than assembling executable SQL from strings.",
+        "optionFeedback": [
+          "Manual escaping is fragile.",
+          "Correct: parameters keep data distinct from SQL.",
+          "Compile-time types can't stop SQL injection."
+        ]
+      },
+      "exercise": "Why doesn't `email as string` make an interpolated query safe?",
+      "solution": "It only affects TypeScript's compile-time view and does not separate SQL code from user-controlled data.",
+      "interview": "I use parameterized queries, server-side validation, least-privilege credentials and secret management.",
+      "warning": "Never put private API keys or database credentials in frontend JavaScript.",
+      "focus": true
+    },
+    {
+      "id": "security-browser",
+      "module": "security",
+      "topic": "Backend security",
+      "title": "CORS, CSRF, XSS and rate limiting: different threats",
+      "scenario": "Your web frontend runs at one origin and the API at another. Users log in with cookies. Why do cross-origin requests, malicious pages, and scripts require different protections?",
+      "explanation": "CORS is a browser mechanism controlling whether frontend JavaScript from one origin may read responses from another origin. It is not authorization and does not replace checking user identity. CSRF tricks a logged-in browser into making an unwanted state-changing request, especially when authentication cookies are automatically attached; use SameSite cookies, CSRF tokens and/or origin checks as appropriate. XSS injects malicious JavaScript into a page; prevent it through safe rendering, escaping and content security policies. Rate limiting controls abuse and resource usage, but is separate from authentication.",
+      "code": "// Example (conceptual) secure cookie:\n// Set-Cookie: sid=...; HttpOnly; Secure; SameSite=Lax\n\n// Example CORS policy: allow your own frontend origin.\nAccess-Control-Allow-Origin: https://shop.example\nAccess-Control-Allow-Credentials: true\n\n// For state-changing cookie-auth requests,\n// apply CSRF protections and authorization too.",
+      "walk": [
+        "CORS limits cross-origin browser JavaScript response access.",
+        "Authentication determines which user is making a request.",
+        "CSRF protections defend against unauthorized cross-site actions using ambient credentials.",
+        "XSS defenses prevent injected scripts from executing in your app.",
+        "Rate limits prevent excessive requests from consuming too many resources."
+      ],
+      "quiz": {
+        "question": "Does enabling CORS for your frontend mean your API is authenticated?",
+        "answers": [
+          "Yes, CORS is a form of user authentication",
+          "No, CORS is a browser cross-origin policy, not user identity",
+          "Yes, CORS verifies resource-level permissions"
+        ],
+        "correct": 1,
+        "feedback": "CORS is a browser-origin access policy; it does not prove who the caller is.",
+        "optionFeedback": [
+          "CORS does not establish a user's identity.",
+          "Correct: CORS controls browser cross-origin access.",
+          "Even a restricted origin isn't authentication."
+        ]
+      },
+      "exercise": "Why is `Access-Control-Allow-Origin: *` problematic when combined with credentialed cross-origin requests?",
+      "solution": "Browsers disallow wildcard origin with credentialed response access, and a broad policy is not a substitute for carefully choosing trusted origins.",
+      "interview": "I separate CORS, CSRF, XSS and rate limiting because they address different threat models.",
+      "warning": "HttpOnly cookies reduce direct token theft through XSS, but do not stop all malicious actions caused by XSS.",
+      "focus": false
+    },
+    {
+      "id": "architecture",
+      "topic": "Architecture & patterns",
+      "title": "8. Controller, service, repository and dependency injection",
+      "scenario": "You have a giant POST /orders function with request parsing, inventory rules, SQL queries and payment calls mixed together. Every change breaks something.",
+      "explanation": "Separation of concerns makes code easier to understand and test. A controller speaks HTTP: it receives the request, validates transport data and sends a response. A service or use case coordinates business decisions, such as placing an order. A repository abstracts persistence operations; an adapter implements it with Prisma, SQLAlchemy or raw SQL. Dependency injection supplies the adapter to the service instead of constructing a database client inside the business logic. This means tests can use a fake repository without starting PostgreSQL. A transaction manager is still needed when multiple writes must be atomic; an interface alone cannot guarantee consistency.",
+      "code": "interface OrderRepo {\n  save(order: Order): Promise<Order>;\n}\n\nclass PlaceOrder {\n  constructor(private repo: OrderRepo) {}\n  async execute(input: CreateOrderInput) {\n    const order = new Order(input);\n    return this.repo.save(order);\n  }\n}\n\nasync function postOrder(req, res) {\n  const input = OrderSchema.parse(req.body);\n  const order = await placeOrder.execute(input);\n  res.status(201).json({id: order.id});\n}",
+      "walk": [
+        "OrderRepo is a port: it describes a capability the use case needs.",
+        "PlaceOrder implements application workflow independently of HTTP.",
+        "The constructor receives the repository; this is dependency injection.",
+        "postOrder knows about request/response, validates input and delegates.",
+        "A test can inject a fake OrderRepo without contacting a real database.",
+        "If placing an order also modifies stock and writes an outbox event, coordinate those writes inside a real transaction."
+      ],
+      "quiz": {
+        "question": "Where should inventory business rules live?",
+        "answers": [
+          "Only in the browser button.",
+          "In server-side domain/use-case logic, backed by safe database operations.",
+          "In the CSS styles."
+        ],
+        "correct": 1,
+        "feedback": "The server and database own the invariant. Client-side checks improve UX but cannot guarantee correctness.",
+        "optionFeedback": [
+          "Client validation can be bypassed.",
+          "Correct: enforce in trusted code and database.",
+          "A read-before-write can race under concurrency."
+        ]
+      },
+      "exercise": "How would you test PlaceOrder without PostgreSQL?",
+      "solution": "Inject a fake OrderRepo implementation that stores orders in memory. Check the use case's behavior and output independently of the database.",
+      "interview": "I keep controllers thin, use cases responsible for workflow, and inject adapters through ports to make my core logic testable.",
+      "warning": "A repository interface alone does not make multiple database writes atomic.",
+      "module": "patterns",
+      "focus": true
+    },
+    {
+      "id": "patterns-solid",
+      "module": "patterns",
+      "topic": "Architecture & design patterns",
+      "title": "SOLID, ports/adapters and domain boundaries",
+      "scenario": "Your PlaceOrder class imports Prisma, Stripe and Express directly. A simple business-rule change now requires mocking the whole web server and payment provider.",
+      "explanation": "Clean Architecture separates stable business policy from changing technical details. The application defines ports such as OrderRepository or PaymentGateway that describe the capabilities it needs; infrastructure adapters implement those ports using Prisma or Stripe. Dependency injection supplies adapters from the outside. SOLID principles help keep classes focused, open to extension at meaningful boundaries and dependent on abstractions rather than hard-coded implementations. Avoid creating five layers for a one-line program: the point is readability, testability and deliberate ownership of business rules.",
+      "code": "// Core port - no Stripe import:\ninterface PaymentGateway {\n  charge(key: string, cents: number): Promise<void>;\n}\nclass CollectPayment {\n  constructor(private payments: PaymentGateway) {}\n  pay(key: string, cents: number) {\n    return this.payments.charge(key,cents);\n  }\n}\n// Production: inject StripePaymentGateway.\n// Test: inject FakePaymentGateway.",
+      "walk": [
+        "The PaymentGateway port states what the use case needs, without naming a vendor.",
+        "CollectPayment receives an implementation instead of constructing Stripe internally.",
+        "A production adapter calls the real provider.",
+        "A fake adapter records attempts or simulates failures during tests.",
+        "The business rule and transaction guarantees still need correct implementation, independent of clean class structure."
+      ],
+      "quiz": {
+        "question": "Why inject PaymentGateway rather than creating new StripeClient inside the use case?",
+        "answers": [
+          "To make the use case testable and less coupled",
+          "Because TypeScript forbids new",
+          "Because Stripe is a database"
+        ],
+        "correct": 0,
+        "feedback": "Injecting a port decouples core code from the external SDK and makes tests easier.",
+        "optionFeedback": [
+          "Correct: ports support test fakes and loose coupling.",
+          "Interfaces cannot make remote payments atomic.",
+          "Types cannot prevent network outages."
+        ]
+      },
+      "exercise": "How would you test payment retries without charging real cards?",
+      "solution": "Inject a fake PaymentGateway that records keys and simulates timeouts; verify retries reuse the expected key and don't duplicate your internal state changes.",
+      "interview": "I define domain-centered ports and inject adapters so infrastructure can change without rewriting business policy.",
+      "warning": "Clean layering does not automatically make distributed payment and PostgreSQL atomic.",
+      "focus": true
+    },
+    {
+      "id": "distributed",
+      "topic": "Distributed systems",
+      "title": "10. Outbox and retries: never lose an order event",
+      "scenario": "Your API writes an order to PostgreSQL and then publishes OrderCreated to a queue. What if the server crashes after committing the order but before sending the event?",
+      "explanation": "PostgreSQL and a message broker have separate transactions. A normal database transaction cannot also commit a RabbitMQ publication atomically. The transactional outbox pattern fixes lost event intent: insert the order and an outbox event in the SAME PostgreSQL transaction. A separate publisher reads pending events, sends them and retries after failures. Publishing may happen more than once—for example, if the publisher crashes after sending but before recording success. Therefore, consumers also need to deduplicate processing. External email or payment calls need additional idempotency or reconciliation; exactly-once external effects cannot be assumed.",
+      "code": "BEGIN;\nINSERT INTO orders(id,status)\nVALUES ('ord_7','PENDING_PAYMENT');\nINSERT INTO outbox_events(id,type,payload)\nVALUES ('evt_7','OrderCreated',\n        '{\"orderId\":\"ord_7\"}');\nCOMMIT;\n\n-- Background publisher reads outbox_events,\n-- sends events to the broker, then marks them sent.\n-- Consumers deduplicate event IDs.",
+      "walk": [
+        "The order and outbox row are written within the same local transaction.",
+        "If either insert fails, a rollback removes both.",
+        "After commit, the event intent is durable even if the API process dies.",
+        "A background worker publishes the outbox event after commit.",
+        "If publishing succeeds but marking as sent fails, the worker may publish again.",
+        "Consumers should store processed event IDs with their own database work."
+      ],
+      "quiz": {
+        "question": "Does an outbox alone guarantee exactly-once message delivery?",
+        "answers": [
+          "Yes, no consumer deduplication is required.",
+          "No, duplicate publications are possible.",
+          "It prevents database transactions from committing."
+        ],
+        "correct": 1,
+        "feedback": "The outbox couples the database write with event intent, not with broker acknowledgement. Duplicate delivery is still possible.",
+        "optionFeedback": [
+          "DB atomicity doesn't ensure one broker delivery.",
+          "Correct: outbox publishers may resend.",
+          "One DB transaction doesn't include broker ACKs."
+        ]
+      },
+      "exercise": "What happens if publishing succeeds but the outbox worker crashes before recording that it sent the event?",
+      "solution": "On restart the worker may publish the event again. Consumer-side idempotency/deduplication prevents duplicate local effects.",
+      "interview": "The outbox avoids losing events between DB commit and message publication; consumers still need idempotent handling.",
+      "warning": "Do not send a broker message inside a PostgreSQL transaction and assume they become one global transaction.",
+      "module": "distributed",
+      "focus": true
+    },
+    {
+      "id": "distributed-idem",
+      "module": "distributed",
+      "topic": "Reliability & distributed systems",
+      "title": "Idempotency, retry budgets and ambiguous payment states",
+      "scenario": "The checkout POST reaches a payment provider and charges a customer. The HTTP connection then times out before your server receives the result. Should you charge again?",
+      "explanation": "A timeout is an unknown outcome: the provider may have completed the charge even though you did not receive its response. Idempotency means retrying the same logical operation should not repeat its effect. Use a client-generated idempotency key scoped to the customer or merchant, claim it durably before effects, compare request fingerprints, and reuse the same provider idempotency key on retries when supported. Keep the payment in an explicit PAYMENT_UNKNOWN state and reconcile with the provider before fulfillment. Bound retries and use backoff with jitter instead of retrying indefinitely.",
+      "code": "POST /checkout\nIdempotency-Key: checkout-attempt-123\n\n-- Durable uniqueness at your database boundary:\nUNIQUE (customer_id, idempotency_key)\n\n// Retry the same logical payment with SAME provider key.\n// On timeout: mark PAYMENT_UNKNOWN and reconcile.\n// Only verified success -> PAID -> fulfillment.",
+      "walk": [
+        "A logical checkout attempt gets a stable key reused across retries.",
+        "A DB unique constraint prevents concurrent duplicate claims within the same scope.",
+        "A fingerprint detects when a key is accidentally used for different input.",
+        "A provider timeout means unknown, not confirmed failure.",
+        "The worker reconciles and moves to PAID or FAILED before further actions."
+      ],
+      "quiz": {
+        "question": "The provider timed out. What should your system assume?",
+        "answers": [
+          "The provider definitely rejected the charge",
+          "The charge may have succeeded and must be reconciled",
+          "A new idempotency key should be used for every retry"
+        ],
+        "correct": 1,
+        "feedback": "The provider may have completed the charge before the response was lost. Reconcile and reuse provider keys.",
+        "optionFeedback": [
+          "Timeouts don't prove remote failure.",
+          "Correct: result unknown, reconcile.",
+          "New keys risk duplicate external charges."
+        ]
+      },
+      "exercise": "Why doesn't inserting a unique row after the charge prevent duplicate charges?",
+      "solution": "Two concurrent calls could both charge before either inserts its unique row. Claim the key atomically before side effects and use provider idempotency.",
+      "interview": "I use stable scoped idempotency keys, bounded retries and explicit unknown-state reconciliation for external side effects.",
+      "warning": "Exactly-once network delivery is not a safe assumption, especially for external money movements.",
+      "focus": true
+    },
+    {
+      "id": "distributed-cache",
+      "module": "distributed",
+      "topic": "Reliability & distributed systems",
+      "title": "Caching, queues, consistency and backpressure",
+      "scenario": "The shop's product list is read thousands of times per second, but orders must never show invented stock. Meanwhile, the email provider slows down and notification work piles up.",
+      "explanation": "A cache such as Redis can reduce repeated database reads for catalog data, but it introduces an invalidation problem: what happens when product prices change? Keep PostgreSQL authoritative for monetary and inventory invariants. A message queue can buffer slow background work, but messages may arrive late, repeat or fail; monitor queue age and use bounded retries and dead-letter handling. Backpressure prevents a failing dependency from causing unlimited retries and resource exhaustion. Choose caches and queues for measured problems rather than using them everywhere.",
+      "code": "// Read-heavy catalog:\n// GET /products -> cache check -> PostgreSQL on miss\n// On product update: invalidate cached product key.\n\n// Background notifications:\n// OrderPaid -> outbox -> queue -> email worker\n// Worker: bounded concurrency and retries\n// Metrics: queue oldest age, retry count, error rate.",
+      "walk": [
+        "Catalog reads are good cache candidates because they repeat frequently.",
+        "The database remains the authoritative source for price and inventory decisions.",
+        "Invalidate or version cached entries when underlying data changes.",
+        "Queue workers handle background work outside the HTTP response path.",
+        "Rate-limited retries and dead-letter workflows contain prolonged failures."
+      ],
+      "quiz": {
+        "question": "Can a cache replace the transaction that reserves the last stock item?",
+        "answers": [
+          "Yes, always",
+          "No, preserve the authoritative invariant in the DB",
+          "Only if the cache key is short"
+        ],
+        "correct": 1,
+        "feedback": "A cache can help reads, but a durable stock invariant needs a safe authoritative write path.",
+        "optionFeedback": [
+          "Cache speed doesn't guarantee inventory integrity.",
+          "Correct: authoritative writes must be safe.",
+          "Expiration alone doesn't prevent concurrent overselling."
+        ]
+      },
+      "exercise": "What three metrics help you detect a broken email worker?",
+      "solution": "Queue lag/oldest age, error/retry rate, and completed messages per second (throughput).",
+      "interview": "I add caching for measured read pressure and queues for asynchronous work, while keeping consistency and backpressure explicit.",
+      "warning": "Redis caching is not a free second source of truth for financial transactions.",
+      "focus": false
+    },
+    {
+      "id": "testing-unit",
+      "module": "testing",
+      "topic": "Testing & quality",
+      "title": "Unit testing: test business rules with fakes",
+      "scenario": "You're changing PlaceOrder and want to know whether it rejects negative quantity without starting PostgreSQL or Stripe.",
+      "explanation": "A unit test exercises a small piece of business logic in isolation. Dependency injection enables a fake repository or payment gateway that returns controlled answers and records how it was called. Arrange the inputs and fake dependencies, act by calling the use case, and assert the result or error. Test important negative cases, not just happy paths. Keep unit tests fast and repeatable. Remember that a fake database does not prove your real database locking behavior: transaction and concurrency guarantees require separate integration tests.",
+      "code": "const fakeRepo = {\n  saved: [] as Order[],\n  async save(o: Order) {\n    this.saved.push(o);\n    return o;\n  }\n};\nconst useCase = new PlaceOrder(fakeRepo);\nawait useCase.execute(validInput);\nexpect(fakeRepo.saved).toHaveLength(1);",
+      "walk": [
+        "fakeRepo implements just the capability needed for the use case.",
+        "saved collects observable effects without writing to PostgreSQL.",
+        "The test supplies a known valid input.",
+        "The assertion checks that one order was saved.",
+        "Add tests for invalid quantity and repository failure to cover behavior under errors."
+      ],
+      "quiz": {
+        "question": "Can a unit test with an in-memory fake prove PostgreSQL SERIALIZABLE behavior?",
+        "answers": [
+          "Yes",
+          "No; use real DB integration tests",
+          "Only with React"
+        ],
+        "correct": 1,
+        "feedback": "A fake can't reproduce the real DB's locking and isolation semantics.",
+        "optionFeedback": [
+          "Fake tests don't emulate PostgreSQL isolation.",
+          "Correct: real DB tests are required.",
+          "Promises don't reproduce database locks."
+        ]
+      },
+      "exercise": "Write a negative unit test idea for checkout.",
+      "solution": "Give quantity = -1 and assert the use case rejects it and does not call repository.save or paymentGateway.charge.",
+      "interview": "I unit-test domain rules using fake ports, then separately test database integration and concurrent behavior.",
+      "warning": "Mocking every tiny function can make tests brittle; focus on meaningful behavior.",
+      "focus": true
+    },
+    {
+      "id": "testing-integration",
+      "module": "testing",
+      "topic": "Testing & quality",
+      "title": "Integration and API tests: verify real behavior",
+      "scenario": "Your unit tests pass, but production still occasionally oversells the last product. What was missing?",
+      "explanation": "An integration test uses real boundaries such as PostgreSQL and a running API controller to verify that adapters, SQL, constraints and transactions work together. For concurrent inventory, start two transactions or HTTP requests and assert at most one reservation succeeds when stock is one. An API test checks status codes, validation errors and authorization for real endpoints. End-to-end tests can exercise the customer flow from UI to API to persistence. A sensible test pyramid has many fast unit tests, targeted integration tests for risky boundaries, and fewer full end-to-end tests.",
+      "code": "// Integration test idea (pseudocode):\n// Insert product stock = 1 into test PostgreSQL.\nconst results = await Promise.allSettled([\n  checkout(\"customer-a\"),\n  checkout(\"customer-b\")\n]);\n// Assert exactly one reservation succeeded.\n// Assert final inventory stock is 0.\n// Assert exactly one committed order exists.",
+      "walk": [
+        "Create isolated, known database fixtures in a test database.",
+        "Trigger competing operations that target the same stock record.",
+        "Wait until both outcomes are known.",
+        "Check the actual durable DB state, not only HTTP response text.",
+        "Repeat concurrency tests as needed because timing races can be nondeterministic."
+      ],
+      "quiz": {
+        "question": "What test would best verify real PostgreSQL write locking under concurrent checkout?",
+        "answers": [
+          "A fake repository unit test",
+          "A real PostgreSQL concurrency integration test",
+          "A CSS snapshot"
+        ],
+        "correct": 1,
+        "feedback": "Only the real database reproduces actual transaction isolation and locks.",
+        "optionFeedback": [
+          "Fakes cannot test real row locking.",
+          "Correct: real PostgreSQL concurrency tests.",
+          "Mocked SQL skips the behavior under test."
+        ]
+      },
+      "exercise": "Why check final database stock and order count, not only responses?",
+      "solution": "A handler may report a plausible response even if its writes were wrong or rolled back; check committed invariants directly.",
+      "interview": "I use unit tests for business rules, integration tests for SQL/transactions and API tests for contract/auth behavior.",
+      "warning": "Always isolate destructive integration tests from production databases.",
+      "focus": false
+    },
+    {
+      "id": "frontend-react",
+      "module": "frontend",
+      "topic": "Frontend integration",
+      "title": "React ↔ API: loading, errors and safe forms",
+      "scenario": "The customer clicks Buy. The network is slow, then returns HTTP 409 because the product sold out. How should the frontend react?",
+      "explanation": "Frontend code controls user interaction, form state and feedback. It is responsible for a clear loading state, avoiding accidental double clicks and showing meaningful errors. But the backend remains responsible for enforcing inventory and authorization. fetch resolves to a Response even for many HTTP 4xx/5xx statuses, so the code must check response.ok instead of assuming every response was successful. In React, keep form inputs controlled or explicitly read them, show submission progress and avoid updating state after a component unmounts when appropriate.",
+      "code": "async function submitOrder(productId: string) {\n  setLoading(true);\n  setError(\"\");\n  try {\n    const res = await fetch(\"/api/orders\", {\n      method: \"POST\",\n      headers: {\"Content-Type\":\"application/json\"},\n      body: JSON.stringify({productId, quantity:1})\n    });\n    if (!res.ok) throw Error(\"Order failed: \" + res.status);\n    return await res.json();\n  } catch (err) { setError(String(err)); }\n  finally { setLoading(false); }\n}",
+      "walk": [
+        "setLoading(true) can disable the Buy button while the request is pending.",
+        "JSON.stringify prepares the request body for the API.",
+        "res.ok checks whether the HTTP status indicates success.",
+        "catch sets a message the UI can display; better APIs give structured error codes.",
+        "finally runs after success or failure and restores the interface's loading state."
+      ],
+      "quiz": {
+        "question": "Does fetch automatically reject its Promise on HTTP 409?",
+        "answers": [
+          "Yes",
+          "No, check response.ok/status",
+          "Only on mobile"
+        ],
+        "correct": 1,
+        "feedback": "fetch resolves with an HTTP Response for many 4xx/5xx statuses; check res.ok.",
+        "optionFeedback": [
+          "HTTP 409 usually resolves to a Response.",
+          "Correct: inspect response.ok or status.",
+          "JSON doesn't change fetch's HTTP error semantics."
+        ]
+      },
+      "exercise": "Why isn't disabling Buy enough to prevent duplicate payments?",
+      "solution": "Users can retry after network failure or send requests outside the UI. The backend needs idempotency keys and durable claims.",
+      "interview": "I make frontend forms accessible and resilient with loading, validation and error states; backend rules remain authoritative.",
+      "warning": "A loading spinner is UX, not a security or consistency guarantee.",
+      "focus": false
+    },
+    {
+      "id": "devops-docker",
+      "module": "devops",
+      "topic": "Deployment & observability",
+      "title": "Docker, environment variables and safe migrations",
+      "scenario": "Your API works on your laptop but fails after deployment because the database URL or runtime dependencies differ.",
+      "explanation": "A production service needs reproducible runtime setup and environment-specific configuration. A Dockerfile describes how to build a container image with its application and dependencies. Environment variables inject database URLs and secrets without hard-coding them into the source. A health endpoint lets the host determine whether the service is running; readiness may require checking important dependencies. Database schema changes should be applied through reviewed migrations, ideally using backward-compatible expand-and-contract changes around deployment so older and newer app versions can coexist.",
+      "code": "# Example high-level Dockerfile\nFROM node:22-alpine\nWORKDIR /app\nCOPY package*.json ./\nRUN npm ci\nCOPY . .\nRUN npm run build\nCMD [\"node\", \"dist/main.js\"]\n\n# Secrets: provided by hosting environment,\n# not written into Dockerfile or Git history.",
+      "walk": [
+        "FROM chooses a Node runtime image.",
+        "WORKDIR sets the filesystem location inside the container.",
+        "npm ci installs locked dependencies reproducibly.",
+        "npm run build compiles TypeScript into runnable JavaScript.",
+        "The host injects DB credentials using environment variables.",
+        "Run schema migrations deliberately and check startup/health status."
+      ],
+      "quiz": {
+        "question": "Where should a production database password live?",
+        "answers": [
+          "In public frontend code",
+          "In server-managed secrets/environment configuration",
+          "In a committed .env file"
+        ],
+        "correct": 1,
+        "feedback": "The hosting platform or secrets manager supplies sensitive credentials privately.",
+        "optionFeedback": [
+          "Committed secrets can leak.",
+          "Correct: use server-managed configuration.",
+          "Dockerfile secrets may remain in images."
+        ]
+      },
+      "exercise": "What is the risk of dropping a database column before all app instances stop using it?",
+      "solution": "Old app versions may still query that column and fail; use backward-compatible migrations and controlled rollout.",
+      "interview": "I build reproducible services, inject secrets securely, deploy with migrations and verify runtime health.",
+      "warning": "Do not bake credentials into Docker images or expose .env contents in source control.",
+      "focus": false
+    },
+    {
+      "id": "devops-observe",
+      "module": "devops",
+      "topic": "Deployment & observability",
+      "title": "CI/CD and observability: debug production safely",
+      "scenario": "Requests become slow after a deploy. You need to know whether the problem is in HTTP, database queries or a background worker.",
+      "explanation": "CI checks code before deployment, commonly running linting, unit tests, integration tests and a build. CD deploys validated artifacts, often with health checks and rollback capability. Once running, logs, metrics and traces show what the system is doing. Structured logs help connect errors to requests without leaking secrets. Metrics reveal rate, errors, latency percentiles and queue lag; traces show time spent across services. Always measure before changing architecture, and compare a deploy to a known healthy baseline.",
+      "code": "// Example deployment checklist:\n// 1. Lint + typecheck + tests.\n// 2. Build immutable artifact.\n// 3. Run reviewed DB migrations.\n// 4. Deploy service and verify /health.\n// 5. Watch p95 latency + errors + DB pool wait.\n// 6. Roll back app safely if needed.",
+      "walk": [
+        "CI catches many defects before the service goes live.",
+        "A build artifact captures the exact code and dependencies.",
+        "Migrations must be compatible with rollout and rollback expectations.",
+        "Health checks detect startup/runtime failure.",
+        "p95 latency, error rate, DB pool waits and queue age identify regressions.",
+        "Logs and traces explain the path of an individual failed request."
+      ],
+      "quiz": {
+        "question": "What should you check first when latency doubles after a deploy?",
+        "answers": [
+          "Real metrics, traces, and query behavior",
+          "Rewrite everything as microservices",
+          "Hide errors from logs"
+        ],
+        "correct": 0,
+        "feedback": "Look at measured latency/error traces and likely bottlenecks before redesigning the architecture.",
+        "optionFeedback": [
+          "Correct: measure before changing architecture.",
+          "Extra connections can increase DB contention.",
+          "More services don't locate the root cause."
+        ]
+      },
+      "exercise": "Explain how p95 differs from average latency.",
+      "solution": "p95 is a threshold below which about 95% of observed requests fall; it reveals slow-tail experiences that averages can conceal.",
+      "interview": "I use CI to prevent regressions and metrics, traces and logs to diagnose what changed after release.",
+      "warning": "Don't log passwords, tokens or other sensitive data into production traces.",
+      "focus": false
+    },
+    {
+      "id": "system-design",
+      "module": "system",
+      "topic": "System design & interview",
+      "title": "System design walkthrough: draw an online checkout",
+      "scenario": "An interviewer asks you to design checkout that prevents duplicate charges, overselling and lost fulfillment notifications. You have 15 minutes.",
+      "explanation": "Start with clarifying questions: expected traffic, inventory requirements, payment provider, latency and failure guarantees. Choose a simple base architecture: frontend, TypeScript API, PostgreSQL, payment provider, transactional outbox, queue and fulfillment worker. Name the important invariants: stock must not go below zero; one logical payment must not charge twice; fulfillment begins only after verified payment. Coordinate order/reservation/outbox in a local transaction, and treat the external payment as an explicit state machine with idempotency and reconciliation. Show failure paths before talking about caching, microservices or huge scale.",
+      "code": "Browser -> POST /checkout (Idempotency-Key)\n  -> API validates/authenticates\n  -> PostgreSQL TX: key + stock + order + outbox\n  -> Payment worker -> provider (stable key)\n  -> PAID or PAYMENT_UNKNOWN\n  -> Outbox -> queue -> fulfillment consumer\n  -> Status endpoint for user",
+      "walk": [
+        "First ask requirements rather than naming technology immediately.",
+        "The API checks identity, permissions and input before writes.",
+        "A local PostgreSQL transaction protects stock, order and durable event intent.",
+        "A remote payment provider uses its own idempotency key and reconciliation.",
+        "A broker/worker handles eventual fulfillment and may redeliver events.",
+        "Close by naming tests for duplicate requests, timeouts and concurrency races."
+      ],
+      "quiz": {
+        "question": "Where is the strongest atomicity boundary in this design?",
+        "answers": [
+          "The local PostgreSQL transaction",
+          "One imagined global transaction across all services",
+          "The customer's browser"
+        ],
+        "correct": 0,
+        "feedback": "PostgreSQL can atomically commit its own inventory/order/outbox writes; external providers require separate recovery workflows.",
+        "optionFeedback": [
+          "Correct: PostgreSQL controls its own transaction.",
+          "External payment isn't in the DB transaction.",
+          "A browser isn't a distributed transaction manager."
+        ]
+      },
+      "exercise": "How would you test the three primary guarantees?",
+      "solution": "Run concurrent stock reservation tests, payment timeout/retry/idempotency tests, and duplicate broker delivery/crash-recovery tests.",
+      "interview": "I define requirements and invariants first, choose the simplest design, and explain recovery from crashes and retries.",
+      "warning": "Don't promise exactly-once network delivery or globally atomic payment and SQL writes.",
+      "focus": true
+    },
+    {
+      "id": "system-performance",
+      "module": "system",
+      "topic": "System design & interview",
+      "title": "Scalability interview: a slow order API under load",
+      "scenario": "Your GET /orders endpoint normally responds in 80ms but becomes 2 seconds when traffic increases. A teammate says to add Redis and split the API into five microservices.",
+      "explanation": "Before redesigning, identify the actual bottleneck. Measure p50/p95/p99 HTTP latency, request rate, error rate, database query timings, locks, connection pool wait time, CPU usage and queue lag. A missing composite index or an ORM N+1 query may be the entire problem. Increasing the database connection pool may worsen contention; more services add coordination and operational work. Caching helps repeated safe reads but introduces invalidation. Prefer a measured, incremental change: optimize SQL, apply bounded pagination, load-test, then scale the known bottleneck if needed.",
+      "code": "// Practical investigation\n1. Look at p95 latency + error rate.\n2. Trace HTTP -> service -> SQL.\n3. EXPLAIN (ANALYZE, BUFFERS) slow SQL.\n4. Check DB pool wait / locks / CPU.\n5. Fix N+1 or missing index if proven.\n6. Load-test again and compare.\n7. Only then evaluate caching or replicas.",
+      "walk": [
+        "Start by confirming which endpoint and query causes the slowdown.",
+        "Measure latency percentiles, not only averages.",
+        "Traces and SQL plans show time-consuming operations.",
+        "Look for pool starvation, locks, inefficient joins or excessive queries.",
+        "Test one targeted optimization and compare under representative load.",
+        "Introduce caching/replicas/services only when measurements justify them."
+      ],
+      "quiz": {
+        "question": "What is the best first response to an unexpectedly slow API?",
+        "answers": [
+          "Add more microservices immediately",
+          "Measure the bottleneck",
+          "Remove all SQL indexes"
+        ],
+        "correct": 1,
+        "feedback": "Measurements identify whether the slow part is CPU, DB, network or another dependency.",
+        "optionFeedback": [
+          "Caching may miss the actual bottleneck.",
+          "Correct: start by measuring.",
+          "Microservices introduce new overhead."
+        ]
+      },
+      "exercise": "Why might increasing the DB connection pool make performance worse?",
+      "solution": "The database may run more concurrent queries than it can efficiently process, increasing contention and memory use.",
+      "interview": "I diagnose measured bottlenecks first and explain tradeoffs before scaling infrastructure.",
+      "warning": "A more complex architecture is not automatically a faster one.",
+      "focus": true
+    },
+    {
+      "id": "railway-502-production",
+      "module": "devops",
+      "topic": "Railway production debugging",
+      "title": "Interview drill: API returns 502 after deployment",
+      "scenario": "Your Go/Node API deploys successfully but requests intermittently return 502 on Railway. Production traffic is affected. Diagnose the system before applying changes.",
+      "explanation": "A 502 from a proxy usually means it could not get a valid response from its upstream. First separate deployment failure from runtime failure: check service deployment state, application logs, /healthz, and traffic patterns. Verify the process binds to 0.0.0.0 and PORT; a server listening on 127.0.0.1 may not be reachable externally. Compare current and prior deployment, examine timeouts, database pool saturation, crash loops, OOM, and upstream requests. Roll back when user impact warrants it, then address the root cause.",
+      "code": "// Node/Bun HTTP startup — listen on the platform port and all interfaces\nconst port = Number(process.env.PORT ?? 3000);\nBun.serve({\n  hostname: '0.0.0.0', port,\n  fetch(req) {\n    if (new URL(req.url).pathname === '/healthz') return new Response('ok');\n    return new Response('service ready');\n  }\n});\n// Check: deploy status → logs → health → dependencies → metrics.",
+      "walk": [
+        "A successful build does not prove a healthy serving process.",
+        "Inspect Railway deployment and runtime logs for the crashing instance.",
+        "Bind 0.0.0.0 and the injected PORT so the routing proxy reaches the app.",
+        "Use a lightweight health endpoint, then investigate dependency readiness separately.",
+        "Look for OOM, pool starvation, slow queries, and timeout mismatches.",
+        "Mitigate with rollback if impact is high, and confirm recovery with error-rate monitoring."
+      ],
+      "quiz": {
+        "question": "An app only listens on 127.0.0.1:3000 in its Railway container. What is the most likely fix?",
+        "answers": [
+          "Increase the number of HTTP retries",
+          "Bind to 0.0.0.0 and the platform PORT",
+          "Disable health checks"
+        ],
+        "correct": 1,
+        "feedback": "The platform proxy must reach the process over the container network.",
+        "optionFeedback": [
+          "Retries do not fix an unreachable listener.",
+          "Correct. Bind to the public interface and provided port.",
+          "Health checks help detect failures; disabling them masks symptoms."
+        ]
+      },
+      "exercise": "Explain the first five investigation steps to an interviewer, including what evidence would trigger a rollback.",
+      "solution": "Start with scope and timeline, check latest deployment and instance logs, probe health, verify PORT/bind address, examine dependency latency and instance resources. Roll back promptly if errors are high and the previous release is healthy.",
+      "interview": "I separate build health from runtime health, inspect deployment/logs and the listener, then trace dependencies and saturation. I mitigate user impact first, validate a rollback if needed, and add alerts and a regression test.",
+      "warning": "Avoid asserting that every 502 is caused by Railway; treat it as a proxy-to-upstream symptom.",
+      "focus": "Reliability · Deployment · Incident response"
+    },
+    {
+      "id": "go-cancel-worker-pool",
+      "module": "go",
+      "topic": "Go concurrency",
+      "title": "Worker pools, context cancellation and goroutine leaks",
+      "scenario": "Your Go service processes external API jobs in parallel. Requests time out, but goroutines keep running and exhaust memory. How do you fix it?",
+      "explanation": "Bound concurrency with a fixed worker pool or semaphore, pass context.Context from request boundaries to downstream calls, and stop work promptly when ctx.Done fires. Always arrange for producers and workers to exit, and avoid blocked sends when consumers are gone. A context signals cancellation; it does not forcibly kill a goroutine. Use deadlines and context-aware database and HTTP clients.",
+      "code": "func worker(ctx context.Context, jobs <-chan Job, results chan<- Result) {\n  for {\n    select {\n    case <-ctx.Done():\n      return\n    case job, ok := <-jobs:\n      if !ok { return }\n      result := process(ctx, job)\n      select {\n      case <-ctx.Done(): return\n      case results <- result:\n      }\n    }\n  }\n}",
+      "walk": [
+        "Jobs is a receive-only channel, making the worker's ownership clear.",
+        "The first select exits when context is cancelled or input closes.",
+        "process must propagate ctx to network and database calls.",
+        "The send select prevents blocking forever after the caller has gone.",
+        "Bound the worker count and wait for workers to exit on shutdown."
+      ],
+      "quiz": {
+        "question": "Does cancelling a Go context automatically terminate every goroutine?",
+        "answers": [
+          "Yes, immediately",
+          "No, code must observe ctx.Done and stop cooperatively",
+          "Only when using buffered channels"
+        ],
+        "correct": 1,
+        "feedback": "Cancellation is cooperative; goroutines must check the signal.",
+        "optionFeedback": [
+          "A context does not kill goroutines.",
+          "Correct: code and downstream clients must cooperate.",
+          "Buffering does not change cancellation semantics."
+        ]
+      },
+      "exercise": "Identify two places a goroutine can leak in a fan-out/fan-in pipeline, and propose a cancellation-safe fix.",
+      "solution": "Blocked sending to results after a consumer returns, and blocked receiving from a producer that never closes jobs. Use ctx-aware selects, close owned channels, and coordinate workers with WaitGroup.",
+      "interview": "I use bounded concurrency, propagate context to every I/O boundary, and design clear channel ownership. I test cancellations and race conditions with go test -race.",
+      "warning": "Never close a channel from the receiving side when other senders may still write.",
+      "focus": "Go · Concurrency · Reliability"
+    },
+    {
+      "id": "sql-index-explain",
+      "module": "sql",
+      "topic": "PostgreSQL query plans",
+      "title": "Investigate a slow order query with EXPLAIN ANALYZE",
+      "scenario": "An orders API drops from 40 ms to 3 seconds as data grows. How would you determine whether an index is missing?",
+      "explanation": "Start with realistic query and parameter shapes, use EXPLAIN (ANALYZE, BUFFERS) in a safe environment, examine scan types, estimated versus actual rows, buffers, sorts and filters. Build a selective composite index reflecting equality filters and ordering when appropriate, then re-measure with representative data. Consider write amplification, index bloat, and whether query changes outperform extra indexes. Never assume a sequential scan is always bad.",
+      "code": "EXPLAIN (ANALYZE, BUFFERS)\nSELECT id, created_at, status\nFROM orders\nWHERE customer_id = 42\nORDER BY created_at DESC\nLIMIT 20;\n\n-- Candidate after checking selectivity and plan:\nCREATE INDEX CONCURRENTLY idx_orders_customer_created\nON orders (customer_id, created_at DESC);",
+      "walk": [
+        "Capture query latency at the application and database level.",
+        "Compare estimated and actual row counts to spot stale statistics.",
+        "Inspect buffers and scan/sort costs for the expensive plan steps.",
+        "Test a composite index matching the filter and sort pattern.",
+        "Measure the changed plan and account for index maintenance cost."
+      ],
+      "quiz": {
+        "question": "Why isn't a sequential scan automatically a problem?",
+        "answers": [
+          "Sequential scans never use CPU",
+          "Small tables or low-selectivity predicates can make them cheaper",
+          "PostgreSQL ignores indexes"
+        ],
+        "correct": 1,
+        "feedback": "Planner choices depend on table size, selectivity, cost, and available indexes.",
+        "optionFeedback": [
+          "All scans consume resources.",
+          "Correct: sequential scans may be optimal.",
+          "PostgreSQL uses indexes when its planner estimates they help."
+        ]
+      },
+      "exercise": "Describe how you would prove an index improves p95 latency without overfitting to a tiny development database.",
+      "solution": "Use production-like volume and distribution in staging, compare EXPLAIN ANALYZE BUFFERS, benchmark representative parameters, and check p95 plus write overhead.",
+      "interview": "I begin with measurement, compare actual and estimated plan rows, and test the smallest useful index. I consider write cost and verify with realistic data.",
+      "warning": "EXPLAIN ANALYZE executes the query; treat modifying statements accordingly.",
+      "focus": "PostgreSQL · Performance · Measurement"
+    },
+    {
+      "id": "api-idempotency-retry",
+      "module": "api",
+      "topic": "API reliability",
+      "title": "Design an idempotent payment endpoint",
+      "scenario": "A client times out after submitting payment and retries. The first request may have succeeded. How do you prevent double charging?",
+      "explanation": "The client sends a stable idempotency key for a logical operation. The server scopes it to the authenticated account, stores request fingerprint and outcome in durable storage with a unique constraint, and returns the original result for same-key retries. Reject same key with different payload. Coordinate with payment provider idempotency and transaction/outbox boundaries; a key alone does not make multi-system side effects atomic.",
+      "code": "POST /payments\nIdempotency-Key: 5b1f...unique-operation-id\n\nBEGIN;\n-- Unique key is scoped to account and operation.\nINSERT INTO idempotency (account_id, idem_key, request_hash, status)\nVALUES (42, '5b1f...', 'sha256...', 'processing')\nON CONFLICT DO NOTHING;\n-- Winner performs the guarded workflow and stores final result.\nCOMMIT;",
+      "walk": [
+        "Client reuses the same key only for retries of the same operation.",
+        "Server checks the key belongs to the authenticated account.",
+        "Unique constraint ensures concurrent retries cannot both claim ownership.",
+        "Store stable final result and request fingerprint.",
+        "Integrate provider-side idempotency and reconcile uncertain outcomes.",
+        "Define expiration and recovery when a processing attempt crashes."
+      ],
+      "quiz": {
+        "question": "What should happen when a retry reuses an idempotency key with a different payment amount?",
+        "answers": [
+          "Process as a new payment",
+          "Reject the request due to mismatched payload",
+          "Charge both amounts"
+        ],
+        "correct": 1,
+        "feedback": "An idempotency key identifies one logical operation, not arbitrary requests.",
+        "optionFeedback": [
+          "A same-key different-payload request is unsafe.",
+          "Correct: detect and reject the mismatch.",
+          "This risks duplicate or incorrect charges."
+        ]
+      },
+      "exercise": "Explain what happens when the server crashes after the provider charges the card but before the database commits.",
+      "solution": "Use the provider idempotency key and reconcile the operation state; retry safely with the same provider key, read provider status and complete local durable record. Consider outbox/workflow architecture.",
+      "interview": "I define idempotency at the business-operation boundary, persist key and payload fingerprint, deduplicate concurrent attempts, and reconcile uncertain external side effects.",
+      "warning": "A database unique key alone cannot atomically commit an external payment provider charge.",
+      "focus": "API · Transactions · Distributed systems"
+    },
+    {
+      "id": "system-feed-cache",
+      "module": "system",
+      "topic": "System design tradeoffs",
+      "title": "System design: cache a high-traffic news feed",
+      "scenario": "Your API serves a personalized feed to 100,000 active users. Database load spikes at peak traffic. Design caching without serving private data to the wrong user.",
+      "explanation": "Establish requirements, read/write volumes, staleness tolerance, and access controls before choosing caches. A CDN works for public immutable assets; personalized responses need per-user cache keys and strict authorization or private cache directives. Cache-aside with TTL and event-driven invalidation can reduce reads; mitigate stampedes with coalescing and jitter. Discuss key cardinality, invalidation failures and fallback under Redis outages.",
+      "code": "// Cache-aside pseudocode\nconst key = `feed:v2:${authenticatedUser.id}:${cursor}`;\nlet page = await redis.get(key);\nif (!page) {\n  page = await database.loadFeed(authenticatedUser.id, cursor);\n  await redis.set(key, JSON.stringify(page), { EX: 30 });\n}\nreturn page; // Never trust a user ID passed directly by the client.",
+      "walk": [
+        "Quantify read QPS, latency SLA, and acceptable staleness.",
+        "Separate public shared content from personalized private content.",
+        "Choose an authorized cache key and a short TTL.",
+        "Handle cache stampede and Redis unavailability.",
+        "Monitor hit ratio, tail latency and stale-data reports."
+      ],
+      "quiz": {
+        "question": "Which cache key is safest for a personalized feed?",
+        "answers": [
+          "feed:global",
+          "feed:${authenticatedUser.id}:${cursor}",
+          "feed:${request.query.userId} without authorization"
+        ],
+        "correct": 1,
+        "feedback": "Private content requires keys anchored to authenticated identity and authorization.",
+        "optionFeedback": [
+          "Global key can leak one user's data to another.",
+          "Correct: still validate access to any underlying resources.",
+          "Client-controlled IDs may bypass authorization."
+        ]
+      },
+      "exercise": "Discuss how to handle invalidation when a user blocks another user, and how to test for cache leakage.",
+      "solution": "Invalidate/namespace affected feed entries, apply authorization at read time where needed, test two users with distinct permissions under warm-cache conditions and simulate Redis failure.",
+      "interview": "I quantify traffic and freshness, choose cache boundaries by privacy, then cover invalidation, stampede protection, and tail-latency behavior.",
+      "warning": "Caching must never bypass authorization or expose another user's private response.",
+      "focus": "System design · Security · Caching"
+    },
+    {
+      "id": "security-jwt-authz",
+      "module": "security",
+      "topic": "Application security",
+      "title": "Authentication is not authorization: prevent IDOR",
+      "scenario": "An authenticated user changes /orders/100 to /orders/101 and can read another user's order. What broke?",
+      "explanation": "Authentication proves the requester is a known principal; authorization decides whether that principal can access this specific order. Check ownership/tenant membership in the database query or a robust policy layer, not just a frontend route guard. Apply least privilege, return appropriately opaque errors, log denied access without leaking sensitive details, and add cross-tenant integration tests.",
+      "code": "// In the repository layer, scope by trusted identity:\nconst order = await db.orders.findFirst({\n  where: { id: orderId, accountId: session.accountId }\n});\nif (!order) return new Response('Not found', { status: 404 });",
+      "walk": [
+        "The JWT/session identifies the caller; it does not authorize every object ID.",
+        "Never trust a tenant or account ID directly from query parameters.",
+        "Scope data access using trusted identity and policy.",
+        "Test access by a valid user to another user's objects.",
+        "Audit access denial without revealing private object details."
+      ],
+      "quiz": {
+        "question": "A valid JWT lets user A read user B's order. What category is this?",
+        "answers": [
+          "Insufficient logging only",
+          "Broken object-level authorization (IDOR/BOLA)",
+          "DNS misconfiguration"
+        ],
+        "correct": 1,
+        "feedback": "Valid authentication does not imply object-level permission.",
+        "optionFeedback": [
+          "Logging does not enforce authorization.",
+          "Correct: verify access on each object.",
+          "DNS does not explain a cross-user data leak."
+        ]
+      },
+      "exercise": "Write two integration test cases that should fail before the fix and pass afterward.",
+      "solution": "User A can view A's order; User A cannot view B's order even with B's ID. Repeat for updates and exports.",
+      "interview": "I distinguish authentication from authorization and enforce tenant scope in every sensitive query with negative cross-user tests.",
+      "warning": "Never rely on a hidden UI link or guessing-resistant IDs as the only permission control.",
+      "focus": "Security · Authorization · Testing"
+    },
+    {
+      "id": "ai-agent-tool-safety",
+      "module": "ai",
+      "topic": "AI engineering interview",
+      "title": "Build reliable LLM tools with strict boundaries",
+      "scenario": "An AI support agent reads customer tickets and can issue refunds. A malicious ticket contains instructions to refund the attacker's account. How do you contain the risk?",
+      "explanation": "Treat model outputs and retrieved text as untrusted. Define narrow tool schemas with server-side validation and authorization, separate read and write capabilities, require explicit human confirmation for consequential actions, and limit budgets and privileges. Test prompt injection, wrong-account access, hallucinated tool arguments, retries and duplicate actions. Log decisions without leaking secrets.",
+      "code": "// Tool handler: enforce identity on server, not in the model prompt\nasync function refundOrder({ orderId, reason }, session) {\n  const order = await db.orders.findFirst({\n    where: { id: orderId, accountId: session.accountId }\n  });\n  if (!order) throw new Error('Forbidden');\n  return { requiresApproval: true, orderId: order.id, reason };\n}",
+      "walk": [
+        "Retrieved tickets are data, not instructions granting permissions.",
+        "Tool arguments must be schema-validated.",
+        "Server checks actor identity, ownership and business rules.",
+        "Consequential actions get approval and idempotency protection.",
+        "Evaluate prompt injection, unauthorized access and duplicate calls."
+      ],
+      "quiz": {
+        "question": "Where should refund authorization be enforced?",
+        "answers": [
+          "Only in the AI system prompt",
+          "In the backend tool handler using authenticated identity",
+          "Only in the ticket text"
+        ],
+        "correct": 1,
+        "feedback": "Prompts can guide behavior, but the trusted backend must enforce permissions.",
+        "optionFeedback": [
+          "System prompts alone are not a security boundary.",
+          "Correct: authorization belongs to trusted code.",
+          "Ticket text can contain attacker instructions."
+        ]
+      },
+      "exercise": "Describe two prompt-injection tests and two idempotency checks for the refund tool.",
+      "solution": "Test malicious retrieved instructions and cross-account order IDs; repeat same idempotency key and simulate tool retry after timeout.",
+      "interview": "I keep the model outside the trust boundary, give it least-privilege tools, validate on the server and evaluate failure modes before deployment.",
+      "warning": "Model confidence is not proof of permission.",
+      "focus": "AI · Tool calling · Security"
+    }
+  ]
+}
