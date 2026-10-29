@@ -192,7 +192,7 @@ function render(targetId){
  for(const el of feed.querySelectorAll(".slide"))observer.observe(el);
  const target=targetId?slides.findIndex(x=>x.id===targetId):0;
  active=Math.max(0,target);onActive();
- const targetEl=feed.querySelector(\'.slide[data-index="\'+active+\'"]\');if(targetEl)feed.scrollTop=targetEl.offsetTop;
+ const targetEl=feed.querySelector('.slide[data-index="'+active+'"]');if(targetEl)feed.scrollTop=targetEl.offsetTop;
 }
 function updateTop(){
  document.getElementById("topProgress").style.width=slides.length?(((active+1)/slides.length)*100)+"%":"0%";
@@ -205,7 +205,7 @@ function updateTop(){
  const saved=selectedModule==="saved";document.getElementById("savedBtn").textContent=saved?"♥ Saved":"♡ Saved";
 }
 function onActive(){const s=slides[active];if(s){progress.lastSlide=s.id;progress.views[s.lessonId]=1;save()}updateTop()}
-function goIndex(n){if(!slides.length)return;const idx=Math.max(0,Math.min(slides.length-1,n));feed.scrollTo({top:feed.querySelector(\'.slide[data-index="\'+idx+\'"]\')?.offsetTop??idx*feed.clientHeight,behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"instant":"smooth"});active=idx;onActive()}
+function goIndex(n){if(!slides.length)return;const idx=Math.max(0,Math.min(slides.length-1,n));feed.scrollTo({top:feed.querySelector('.slide[data-index="'+idx+'"]')?.offsetTop??idx*feed.clientHeight,behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"instant":"smooth"});active=idx;onActive()}
 function openSheet(mode){const sc=document.getElementById("sheetContent");document.getElementById("sheetTitle").textContent="Choose what to learn";let html='<div class="progress-row"><span>Lessons understood</span><b>'+progress.completed.length+' / '+lessons.length+'</b></div><div class="progress-row"><span>Questions answered correctly</span><b>'+Object.values(progress.answers).filter(a=>a.correct).length+'</b></div><button class="chapter-row" data-action="module" data-module="all"><span>✨</span><div><strong>For You · All lessons</strong><small>Learn everything by scrolling</small></div></button>';
  for(const m of modules){const mLessons=lessons.filter(l=>l.module===m.id);const done=mLessons.filter(l=>progress.completed.includes(l.id)).length;html+='<button class="chapter-row" data-action="module" data-module="'+esc(m.id)+'"><span>▤</span><div><strong>'+esc(m.title)+'</strong><small>'+esc(m.description)+'</small><span class="chapter-count">'+done+'/'+mLessons.length+' completed</span></div></button>'}
  sc.innerHTML='<label class="small" for="topicSearch">Search your chapters</label><input id="topicSearch" class="nav-search" type="search" placeholder="TypeScript, security, SQL…" aria-label="Search chapters">'+html;sheet.hidden=false;document.getElementById("closeSheet").focus();
