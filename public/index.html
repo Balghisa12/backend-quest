@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#08121d">
+<title>Backend Quest · Swipe to Learn</title>
+<style>
+:root{color-scheme:dark;--bg:#08121d;--ink:#f7fbff;--muted:#b2c8d8;--green:#7bf2c0;--border:#ffffff20;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+*{box-sizing:border-box}
+html,body{height:100%;width:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--ink)}
+button,textarea{font:inherit}button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+button:focus-visible,.opt:focus-visible{outline:3px solid #ffe1a0;outline-offset:3px}
+.shell{max-width:560px;margin:auto;height:100%;position:relative;box-shadow:0 0 70px #0009;background:#0d1d2b;isolation:isolate;overflow:hidden}
+#feed{height:100%;height:100dvh;overflow-x:hidden;overflow-y:auto;scroll-snap-type:y mandatory;scroll-behavior:smooth;overscroll-behavior-y:contain;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+#feed::-webkit-scrollbar{display:none}
+.slide{height:100%;height:100dvh;scroll-snap-align:start;scroll-snap-stop:always;position:relative;display:flex;flex-direction:column;justify-content:center;padding:90px 24px max(104px,calc(env(safe-area-inset-bottom) + 88px));background:radial-gradient(ellipse at 100% 15%,#285f5a80,transparent 57%),linear-gradient(165deg,#132b38 0%,#08131f 68%,#12152a)}
+.slide[data-group="sql"]{background:radial-gradient(ellipse at 100% 15%,#5c437e88,transparent 57%),linear-gradient(165deg,#20213f,#0b1224 72%)}
+.slide[data-group="security"]{background:radial-gradient(ellipse at 100% 15%,#76503a66,transparent 57%),linear-gradient(165deg,#25283b,#111525 72%)}
+.slide[data-group="api"]{background:radial-gradient(ellipse at 100% 12%,#275e8c88,transparent 57%),linear-gradient(165deg,#132c48,#0b1426 72%)}
+.slide[data-group="distributed"],.slide[data-group="system"]{background:radial-gradient(ellipse at 100% 12%,#34676e88,transparent 57%),linear-gradient(165deg,#163542,#0a1524 72%)}
+.slide[data-group="frontend"]{background:radial-gradient(ellipse at 95% 10%,#64407899,transparent 57%),linear-gradient(165deg,#2b1d42,#111626 72%)}
+.slide::before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,#08121d33 0%,transparent 36%,#08121d60 100%)}
+.slide-content{position:relative;z-index:1;max-height:100%;min-height:0;overflow:auto;scrollbar-width:thin;scrollbar-color:#608b89 transparent;overscroll-behavior:contain;padding:4px 2px 8px}
+.eyebrow{font-size:11px;font-weight:850;letter-spacing:2px;text-transform:uppercase;color:#85ecc5;margin-bottom:12px}
+.big-title{font-weight:850;letter-spacing:-1.3px;font-size:clamp(30px,7.7vw,43px);line-height:1.12;margin:0 0 19px;text-wrap:balance}
+.body-text{font-size:clamp(16px,3.8vw,19px);line-height:1.65;color:#e6f4fb;margin:0 0 16px;max-width:45ch}
+.quote{font-size:clamp(18px,4.5vw,23px);line-height:1.53;border-left:4px solid #75edc2;padding:5px 0 5px 17px;color:#f2fff9}
+.accent{color:var(--green)}
+.pill{display:inline-flex;align-items:center;gap:7px;border:1px solid #ffffff3a;background:#ffffff12;border-radius:50px;padding:6px 11px;font-size:11px;color:#d9e8ee;font-weight:750;margin-bottom:18px}
+.card-panel{background:#07182ab5;border:1px solid #ffffff36;border-radius:18px;padding:17px;margin-top:16px}
+.card-panel b{display:block;margin-bottom:5px;color:#9effd6;font-size:12px;text-transform:uppercase;letter-spacing:1px}
+.card-panel p{font-size:14px;line-height:1.6;margin:0;color:#e4f0f7}
+.code{background:#060e1cf0;color:#d2fbe5;border:1px solid #51706c;border-radius:15px;padding:17px;font:13px/1.67 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;overflow:auto;tab-size:2;white-space:pre;max-height:45dvh}
+.code::-webkit-scrollbar{height:5px;width:5px}
+.code-caption{font-size:12px;color:#b6d1df;margin-top:14px;line-height:1.6}
+.step-num{font-size:58px;font-weight:900;letter-spacing:-3px;line-height:1;color:#85ffd377;margin-bottom:12px}
+.quiz-options{display:grid;gap:10px;margin:20px 0 4px}
+.opt{background:#152e43cb;border:1.5px solid #66879d7e;border-radius:14px;padding:14px 15px;color:#eefaff;text-align:left;display:flex;gap:12px;line-height:1.5;font-size:15px;min-height:54px;align-items:center}
+.opt:hover,.opt:focus-visible{border-color:#9df5dd}
+.opt .letter{width:27px;height:27px;flex-shrink:0;border-radius:9px;background:#ffffff16;display:grid;place-items:center;font-weight:850;color:#a8dfd4}
+.opt.selected.good{background:#17684c;border-color:#8cffc6}
+.opt.selected.bad{background:#6c304a;border-color:#ffacb4}
+.feedback{padding:15px;background:#103e36e8;border:1px solid #7adbad;border-radius:14px;margin-top:16px;line-height:1.55;font-size:14px}
+.feedback.bad{background:#4b2939e8;border-color:#e48a9e}
+.feedback b{display:block;margin-bottom:5px}
+.feed-note{font-size:13px;color:#b0cbda;line-height:1.5;margin-top:12px}
+.note-input{width:100%;min-height:100px;max-height:170px;resize:vertical;padding:14px;border:1px solid #6e9a99;border-radius:12px;background:#07192bbd;color:#ecf9ff;font-size:15px;line-height:1.5;margin-top:10px}
+.answer-btn,.done-btn{padding:12px 18px;background:#83f2c2;color:#072a21;border:0;border-radius:12px;font-weight:850;margin-top:14px;min-height:46px}
+.soft-btn{background:#ffffff12;color:white;border:1px solid #ffffff45;border-radius:12px;padding:12px 15px;font-weight:800;margin-top:12px}
+.app-top{pointer-events:none;z-index:20;position:absolute;top:0;left:0;right:0;padding:calc(env(safe-area-inset-top) + 14px) 18px 12px;background:linear-gradient(180deg,#061320eb,transparent)}
+.top-row{display:flex;justify-content:space-between;align-items:center;gap:10px;pointer-events:auto}
+.logo{font-weight:950;font-size:17px;letter-spacing:-.5px}.logo span{color:#7feec5}
+.top-right{display:flex;gap:8px}
+.top-icon{background:#ffffff18;border:1px solid #ffffff33;color:#fff;border-radius:30px;padding:9px 12px;font-size:12px;font-weight:800}
+.p-bar{height:3px;background:#ffffff36;border-radius:4px;margin-top:13px;overflow:hidden}.p-bar span{height:100%;background:#7ff2c2;display:block;width:0%;transition:width .25s}
+.app-bottom{position:absolute;z-index:20;left:0;right:0;bottom:0;padding:15px 21px calc(env(safe-area-inset-bottom) + 15px);background:linear-gradient(0deg,#071321f7 58%,#07132100);pointer-events:none}
+.app-bottom>*{pointer-events:auto}
+.bottom-row{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.swipe-hint{font-size:12px;color:#bad7da;display:flex;gap:8px;align-items:center}
+.next-btn{background:#82edc3;color:#07261f;border:none;border-radius:40px;padding:11px 18px;font-weight:900;font-size:13px}
+.bottom-meta{font-size:11px;color:#a9c4d3;margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slide-bookmark{position:absolute;right:21px;top:calc(env(safe-area-inset-top) + 86px);z-index:2;background:#ffffff15;border:1px solid #ffffff31;color:#d9fff1;border-radius:50%;width:43px;height:43px;display:grid;place-items:center;font-size:22px;cursor:pointer}
+.slide-bookmark.saved{background:#85eabd;color:#06281f}
+.loading{height:100dvh;display:grid;place-items:center;text-align:center;padding:30px}
+.loading h1{font-size:27px}
+.loading p{color:#bad2df}
+.sheet{position:absolute;inset:0;z-index:40;background:#050f18bb;display:flex;align-items:flex-end}
+.sheet[hidden]{display:none}
+.sheet-panel{background:#13283a;border:1px solid #54757d;border-radius:25px 25px 0 0;padding:21px 18px calc(env(safe-area-inset-bottom) + 18px);width:100%;max-height:88dvh;overflow-y:auto;box-shadow:0 0 80px #0008}
+.sheet-top{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:8px}
+.sheet-top h2{font-size:22px;margin:0}
+.sheet-close{background:#ffffff1e;color:white;border:0;border-radius:50%;width:39px;height:39px;font-size:22px}
+.chapter-row{display:flex;gap:12px;align-items:center;width:100%;padding:13px 4px;border:0;border-bottom:1px solid #ffffff1e;background:transparent;color:white;text-align:left}
+.chapter-count{font-size:12px;color:#9debd2}
+.chapter-row strong{display:block;font-size:14px}
+.chapter-row small{display:block;color:#bbd0dc;line-height:1.35}
+.sheet-tip{color:#bcd2df;font-size:13px}
+.progress-row{display:flex;justify-content:space-between;gap:12px;margin:13px 0;border:1px solid #ffffff23;padding:13px;border-radius:13px;font-size:13px}
+.empty{padding:50px 24px;text-align:center;color:#c6e1e5}
+@media(min-width:561px){body{background:radial-gradient(circle at 50% 30%,#214d50,#08121d 62%)}}
+@media(max-height:710px){.slide{padding-top:75px;padding-bottom:95px}.big-title{font-size:clamp(26px,6.2vw,36px)}.body-text{font-size:15px}.code{font-size:12px;max-height:35dvh}.quiz-options{gap:7px;margin:12px 0}.opt{padding:10px;min-height:44px}}
+@media(prefers-reduced-motion:reduce){#feed{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+.nav-search{width:100%;background:#071c2e;color:#fff;border:1px solid #658a91;padding:13px;border-radius:11px;margin:10px 0 14px}.chapter-row[hidden]{display:none}.slide-content p{overflow-wrap:break-word}.card-panel p{overflow-wrap:break-word}.restudy{margin-top:11px}.swipe-hint button{min-height:38px}@media(max-height:680px){.slide-content{padding-bottom:15px}}</style>
+</head>
+<body>
+<div class="shell" id="shell">
+  <div id="feed"><div class="loading"><div><h1>⌘ Backend Quest</h1><p>Getting your bite-sized lessons ready…</p></div></div></div>
+  <header class="app-top"><div class="top-row"><div class="logo">⌘ BACKEND <span>QUEST</span></div><div class="top-right"><button class="top-icon" id="savedBtn" aria-label="Show bookmarked lessons">♡ Saved</button><button class="top-icon" id="chaptersBtn">☰ Topics</button></div></div><div class="p-bar"><span id="topProgress"></span></div></header>
+  <div class="app-bottom"><div class="bottom-meta" id="meta">Learn • Try • Explain</div><div class="bottom-row"><div class="swipe-hint"><button class="top-icon" id="prevBtn" aria-label="Previous card">↓ Back</button><span id="indexDisplay"></span></div><button class="next-btn" id="nextBtn">Next ↑</button></div></div>
+  <div class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-label="Choose your learning topic"><div class="sheet-panel"><div class="sheet-top"><h2 id="sheetTitle">Your learning path</h2><button class="sheet-close" id="closeSheet" aria-label="Close topics">×</button></div><p class="sheet-tip" id="sheetTip">Swipe through a chapter, one simple idea at a time.</p><div id="sheetContent"></div></div></div>
+</div>
+<script>
+"use strict";
+const API="/lessons";
+const KEY="backend-quest-swipe-v1";
+const feed=document.getElementById("feed");
+const shell=document.getElementById("shell");
+const sheet=document.getElementById("sheet");
+let lessons=[],modules=[],slides=[],active=0,selectedModule="all",observer=null;
+let progress={answers:{},bookmarks:[],notes:{},completed:[],lastSlide:null,views:{}};
+try{const read=JSON.parse(localStorage.getItem(KEY)||"{}");progress={...progress,...read}}catch{}
+if(!progress.answers||typeof progress.answers!=="object")progress.answers={};
+if(!Array.isArray(progress.bookmarks))progress.bookmarks=[];
+if(!Array.isArray(progress.completed))progress.completed=[];
+if(!progress.notes||typeof progress.notes!=="object")progress.notes={};
+if(!progress.views||typeof progress.views!=="object")progress.views={};
+function save(){try{localStorage.setItem(KEY,JSON.stringify(progress))}catch{}}
+function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function splitText(value,max){
+ const parts=String(value||"").trim().split(/(?<=[.!?])\s+/);
+ const chunks=[];let buffer="";
+ for(const sentence of parts){if((buffer+" "+sentence).length>max&&buffer){chunks.push(buffer);buffer=sentence}else buffer+=(buffer?" ":"")+sentence}
+ if(buffer)chunks.push(buffer);
+ return chunks.length?chunks:["Read the next step to understand this idea."];
+}
+function moduleName(id){const m=modules.find(x=>x.id===id);return m?m.title.replace(/^\d+\s*·\s*/,""):id}
+function groupFor(id){return id==="orm"?"sql":id}
+function buildSlides(){
+ const selected=lessons.filter(l=>selectedModule==="all"||l.module===selectedModule||selectedModule==="saved"&&progress.bookmarks.includes(l.id));
+ slides=[];
+ for(const l of selected){
+  const base={lessonId:l.id,lesson:l,group:groupFor(l.module)};
+  slides.push({...base,id:l.id+":hook",kind:"hook",text:l.scenario,stage:"Real life"});
+  splitText(l.explanation,340).forEach((part,i,all)=>slides.push({...base,id:l.id+":explain:"+i,kind:"explain",text:part,part:i+1,total:all.length,stage:"Learn"}));
+  const lines=(l.code||"").split("\n");const per=11;
+  for(let i=0;i<lines.length;i+=per)slides.push({...base,id:l.id+":code:"+Math.floor(i/per),kind:"code",code:lines.slice(i,i+per).join("\n"),part:Math.floor(i/per)+1,total:Math.ceil(lines.length/per),stage:"Code"});
+  const walk=l.walk||[];
+  for(let i=0;i<walk.length;i+=2)slides.push({...base,id:l.id+":walk:"+Math.floor(i/2),kind:"walk",steps:walk.slice(i,i+2),offset:i,part:Math.floor(i/2)+1,total:Math.ceil(walk.length/2),stage:"Understand"});
+  slides.push({...base,id:l.id+":quiz",kind:"quiz",stage:"Your turn"});
+  slides.push({...base,id:l.id+":apply",kind:"apply",stage:"Practice"});
+  slides.push({...base,id:l.id+":recap",kind:"recap",stage:"Interview ready"});
+ }
+}
+function segmentLabel(s){return s.kind==="hook"?"01 · A real situation":s.kind==="explain"?"02 · THE EXPLANATION":s.kind==="code"?"03 · REAL CODE":s.kind==="walk"?"04 · STEP BY STEP":s.kind==="quiz"?"05 · CHOOSE YOUR ANSWER":s.kind==="apply"?"06 · PRACTICE": "07 · RECAP"}
+function lessonPosition(l){return lessons.findIndex(x=>x.id===l.id)+1}
+function makeSlide(s,i){
+ const l=s.lesson;const saved=progress.bookmarks.includes(l.id);let content="";
+ const title=l.title.replace(/^\d+\.\s*/,"");
+ if(s.kind==="hook")content='<div class="pill">✦ '+esc(moduleName(l.module))+' · Lesson '+lessonPosition(l)+'</div><div class="eyebrow">Here is a real problem</div><h1 class="big-title">'+esc(title)+'</h1><p class="body-text">'+esc(s.text)+'</p><div class="card-panel"><b>Why this matters</b><p>Imagine you are building our online shop. Keep swiping and we will solve this problem together.</p></div>';
+ if(s.kind==="explain")content='<div class="eyebrow">Learn · '+s.part+'/'+s.total+'</div><div class="pill">No jargon without examples</div><h2 class="big-title">'+(s.part===1?"Let's make it simple.":"One more important idea.")+'</h2><p class="body-text">'+esc(s.text)+'</p><div class="card-panel"><b>Your task</b><p>Before you scroll: can you explain this idea in one sentence?</p></div>';
+ if(s.kind==="code")content='<div class="eyebrow">Code example · '+s.part+'/'+s.total+'</div><h2 class="big-title">See it in code.</h2><pre class="code"><code>'+esc(s.code)+'</code></pre><p class="code-caption">Read each line slowly. Next, we explain exactly what the code is doing.</p>';
+ if(s.kind==="walk")content='<div class="eyebrow">Step-by-step · '+s.part+'/'+s.total+'</div><h2 class="big-title">Why does it work?</h2>'+s.steps.map((step,j)=>'<div class="card-panel"><b>Step '+(s.offset+j+1)+'</b><p>'+esc(step)+'</p></div>').join('');
+ if(s.kind==="quiz"){const a=progress.answers[l.id],pick=a?a.choice:-1;const why=a?(l.quiz.optionFeedback?.[a.choice]||l.quiz.feedback):"";content='<div class="eyebrow">Quick knowledge check</div><h2 class="big-title">'+esc(l.quiz.question)+'</h2><div class="quiz-options">'+l.quiz.answers.map((x,n)=>'<button class="opt '+(pick===n?'selected '+(pick===l.quiz.correct?'good':'bad'):'')+'" data-action="answer" data-lesson="'+esc(l.id)+'" data-choice="'+n+'"><span class="letter">'+String.fromCharCode(65+n)+'</span><span>'+esc(x)+'</span></button>').join("")+'</div>'+(a?'<div class="feedback '+(a.correct?'':'bad')+'"><b>'+(a.correct?'✓ You got it!':'Not quite — this is how we learn.')+'</b>'+esc(why)+'</div><div class="card-panel"><b>Why this is the answer</b><p>'+esc(l.quiz.feedback)+'</p></div><button class="soft-btn" data-action="restudy" data-lesson="'+esc(l.id)+'">↶ Review the explanation</button><p class="feed-note">'+(a.correct?'Good work. You can scroll to try the exercise.':'Try another option if you like, or swipe to see the explanation.')+'</p>':'<p class="feed-note">Tap one answer. You get feedback immediately, no pressure.</p>')}
+ if(s.kind==="apply")content='<div class="eyebrow">Your practice exercise</div><h2 class="big-title">Now you try.</h2><p class="body-text">'+esc(l.exercise)+'</p><textarea class="note-input" rows="4" placeholder="Explain in your own words. It saves automatically…" aria-label="Your answer" data-action="note" data-lesson="'+esc(l.id)+'">'+esc(progress.notes[l.id]||"")+'</textarea><button class="soft-btn" data-action="reveal" data-lesson="'+esc(l.id)+'">Show explained answer ↓</button><div id="solution-'+esc(l.id)+'" hidden class="feedback"><b>One good answer</b>'+esc(l.solution)+'</div>';
+ if(s.kind==="recap")content='<div class="eyebrow">Interview-ready recap</div><h2 class="big-title">Can you explain it aloud?</h2><div class="quote">'+esc(l.interview)+'</div><div class="card-panel"><b>One mistake to avoid</b><p>'+esc(l.warning)+'</p></div><button class="done-btn" data-action="complete" data-lesson="'+esc(l.id)+'">'+(progress.completed.includes(l.id)?'✓ Learned — keep going':'✓ I understand this lesson')+'</button><p class="feed-note">Speak the answer in your own words. Then keep swiping to the next lesson.</p>';
+ return '<article class="slide" data-index="'+i+'" data-id="'+esc(s.id)+'" data-group="'+esc(s.group)+'" aria-label="'+esc(s.stage+' · '+l.title)+'"><button class="slide-bookmark '+(saved?'saved':'')+'" data-action="bookmark" data-lesson="'+esc(l.id)+'" aria-label="'+(saved?'Remove saved lesson':'Save lesson for later')+'">'+(saved?'♥':'♡')+'</button><div class="slide-content"><div class="eyebrow">'+esc(segmentLabel(s))+'</div>'+content+'</div></article>';
+}
+function render(targetId){
+ buildSlides();
+ if(!slides.length){feed.innerHTML='<div class="empty"><h2>No saved lessons yet</h2><p>Save a lesson with ♡ and it will appear here.</p><button class="answer-btn" data-action="all">Back to the feed</button></div>';updateTop();return}
+ feed.innerHTML=slides.map(makeSlide).join("");
+ if(observer)observer.disconnect();
+ observer=new IntersectionObserver(function(entries){let best=null;for(const e of entries){if(e.isIntersecting&&(!best||e.intersectionRatio>best.intersectionRatio))best=e}if(best){const n=Number(best.target.dataset.index);if(n!==active){active=n;onActive()}}},{root:feed,threshold:[.5,.75,.95]});
+ for(const el of feed.querySelectorAll(".slide"))observer.observe(el);
+ const target=targetId?slides.findIndex(x=>x.id===targetId):0;
+ active=Math.max(0,target);onActive();
+ feed.scrollTop=active*feed.clientHeight;
+}
+function updateTop(){
+ document.getElementById("topProgress").style.width=slides.length?(((active+1)/slides.length)*100)+"%":"0%";
+ const s=slides[active];document.getElementById("meta").textContent=s?moduleName(s.lesson.module)+" · "+s.lesson.title:"Your learning feed";
+ document.getElementById("indexDisplay").textContent=slides.length?(active+1)+" / "+slides.length:"";
+ const saved=selectedModule==="saved";document.getElementById("savedBtn").textContent=saved?"♥ Saved":"♡ Saved";
+}
+function onActive(){const s=slides[active];if(s){progress.lastSlide=s.id;progress.views[s.lessonId]=1;save()}updateTop()}
+function goIndex(n){if(!slides.length)return;const idx=Math.max(0,Math.min(slides.length-1,n));feed.scrollTo({top:idx*feed.clientHeight,behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"instant":"smooth"});active=idx;onActive()}
+function openSheet(mode){const sc=document.getElementById("sheetContent");document.getElementById("sheetTitle").textContent="Choose what to learn";let html='<div class="progress-row"><span>Lessons understood</span><b>'+progress.completed.length+' / '+lessons.length+'</b></div><div class="progress-row"><span>Questions answered correctly</span><b>'+Object.values(progress.answers).filter(a=>a.correct).length+'</b></div><button class="chapter-row" data-action="module" data-module="all"><span>✨</span><div><strong>For You · All lessons</strong><small>Learn everything by scrolling</small></div></button>';
+ for(const m of modules){const mLessons=lessons.filter(l=>l.module===m.id);const done=mLessons.filter(l=>progress.completed.includes(l.id)).length;html+='<button class="chapter-row" data-action="module" data-module="'+esc(m.id)+'"><span>▤</span><div><strong>'+esc(m.title)+'</strong><small>'+esc(m.description)+'</small><span class="chapter-count">'+done+'/'+mLessons.length+' completed</span></div></button>'}
+ sc.innerHTML='<label class="small" for="topicSearch">Search your chapters</label><input id="topicSearch" class="nav-search" type="search" placeholder="TypeScript, security, SQL…" aria-label="Search chapters">'+html;sheet.hidden=false;document.getElementById("closeSheet").focus();
+}
+function closeSheet(){sheet.hidden=true;document.getElementById("chaptersBtn").focus()}
+function selectModule(id){selectedModule=id;sheet.hidden=true;render();updateTop()}
+function toggleBookmark(id){if(progress.bookmarks.includes(id))progress.bookmarks=progress.bookmarks.filter(x=>x!==id);else progress.bookmarks.push(id);save();if(selectedModule==="saved"){render();return}for(const b of feed.querySelectorAll('[data-action="bookmark"][data-lesson="'+id+'"]')){const saved=progress.bookmarks.includes(id);b.textContent=saved?'♥':'♡';b.classList.toggle("saved",saved);b.setAttribute("aria-label",saved?"Remove saved lesson":"Save lesson for later")}}
+function answerQuiz(id,choice){const l=lessons.find(x=>x.id===id);if(!l)return;progress.answers[id]={choice,correct:choice===l.quiz.correct};save();const index=slides.findIndex(x=>x.id===id+":quiz");const el=feed.querySelector('.slide[data-index="'+index+'"]');if(!el)return;const rep=document.createElement("div");rep.innerHTML=makeSlide(slides[index],index);const newEl=rep.firstElementChild;el.replaceWith(newEl);observer.unobserve(el);observer.observe(newEl);onActive()}
+function completeLesson(id){if(!progress.completed.includes(id))progress.completed.push(id);save();goIndex(active+1)}
+feed.addEventListener("click",function(e){
+ const b=e.target.closest("[data-action]");if(!b)return;
+ const action=b.dataset.action,id=b.dataset.lesson;
+ if(action==="answer")answerQuiz(id,Number(b.dataset.choice));
+ if(action==="bookmark")toggleBookmark(id);
+ if(action==="complete")completeLesson(id);
+ if(action==="reveal"){const el=document.getElementById("solution-"+id);if(el){el.hidden=!el.hidden;b.textContent=el.hidden?"Show explained answer ↓":"Hide explanation ↑"}}
+ if(action==="all")selectModule("all");if(action==="restudy"){const n=slides.findIndex(x=>x.id===id+":explain:0");if(n>=0)goIndex(n)}
+});
+feed.addEventListener("input",function(e){if(e.target.dataset.action==="note"){progress.notes[e.target.dataset.lesson]=e.target.value;save()}});
+document.getElementById("nextBtn").addEventListener("click",()=>goIndex(active+1));document.getElementById("prevBtn").addEventListener("click",()=>goIndex(active-1));
+document.getElementById("savedBtn").addEventListener("click",()=>selectModule(selectedModule==="saved"?"all":"saved"));
+document.getElementById("chaptersBtn").addEventListener("click",()=>openSheet("topics"));
+document.getElementById("closeSheet").addEventListener("click",closeSheet);
+sheet.addEventListener("input",function(e){if(e.target.id==="topicSearch"){const term=e.target.value.trim().toLowerCase();for(const row of sheet.querySelectorAll(".chapter-row"))row.hidden=!row.textContent.toLowerCase().includes(term)}});sheet.addEventListener("click",function(e){if(e.target===sheet)closeSheet();const b=e.target.closest("[data-action='module']");if(b)selectModule(b.dataset.module)});
+document.addEventListener("keydown",function(e){if(!sheet.hidden){if(e.key==="Escape")closeSheet();return}if(["INPUT","TEXTAREA"].includes(document.activeElement?.tagName))return;if(e.key==="ArrowDown"||e.key==="PageDown"){e.preventDefault();goIndex(active+1)}if(e.key==="ArrowUp"||e.key==="PageUp"){e.preventDefault();goIndex(active-1)}});
+async function boot(){
+ try{
+  const response=await fetch(API,{cache:"no-store"});if(!response.ok)throw Error("Lesson server returned "+response.status);
+  const data=await response.json();if(!Array.isArray(data.lessons)||data.lessons.length<10||!Array.isArray(data.modules))throw Error("Lesson data incomplete");
+  lessons=data.lessons;modules=data.modules;
+  selectedModule="all";render(progress.lastSlide);
+ }catch(error){
+  feed.innerHTML='<div class="loading"><div><div class="eyebrow">Unable to load lessons</div><h1>We could not connect.</h1><p>'+esc(error.message||"Connection error")+'</p><button class="answer-btn" id="retry">Try again</button></div></div>';
+  document.getElementById("retry").addEventListener("click",boot)
+ }
+}
+boot();
+</script>
+</body>
+</html>
