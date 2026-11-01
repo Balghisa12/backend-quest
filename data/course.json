@@ -219,7 +219,31 @@
         "Reject all ten invalid inputs listed in the exercise.",
         "Explain compile-time narrowing versus runtime validation without any or assertions."
       ],
-      "verifiedAt": "2026-11-01"
+      "verifiedAt": "2026-11-01",
+      "prediction": {
+        "question": "An API receives quantity as the string \"5\". Does declaring it as number validate it?",
+        "answers": [
+          "Yes — the declaration converts it",
+          "No — runtime checks are still required"
+        ],
+        "correct": 1,
+        "feedback": "Type annotations disappear at runtime. Check the actual value before trusting it."
+      },
+      "conceptCards": [
+        {
+          "title": "A type is not a border guard",
+          "text": "TypeScript checks your code before execution. Incoming JSON arrives later. A declaration or assertion cannot inspect or convert that data."
+        },
+        {
+          "title": "Unknown asks you to prove it",
+          "text": "any lets unchecked operations pass the compiler. unknown requires narrowing before you use the value as a number. Start untrusted values as unknown."
+        },
+        {
+          "title": "A number can still be invalid",
+          "text": "After typeof, check the business rule. Fractions, NaN, Infinity, negative numbers and unsafe integers must all be rejected for this quantity contract."
+        }
+      ],
+      "takeaway": "Validate the runtime type, then validate the business rule."
     },
     {
       "id": "ts-unions",
@@ -1510,7 +1534,35 @@
         "Empty input and normal completion close results without panic.",
         "Cancellation during cooperative processing exits; errors have an explicit reporting policy."
       ],
-      "verifiedAt": "2026-11-01"
+      "verifiedAt": "2026-11-01",
+      "prediction": {
+        "question": "You cancel the context while a worker is blocked on a plain results-channel send. Does the worker stop?",
+        "answers": [
+          "Yes — cancellation interrupts the send",
+          "No — the send must also observe cancellation"
+        ],
+        "correct": 1,
+        "feedback": "Context cancellation is a signal. A plain channel send does not listen to that signal."
+      },
+      "conceptCards": [
+        {
+          "title": "Bound the work",
+          "text": "Start a fixed number of workers and bound the queue. Otherwise one burst of jobs can create more active work or queued data than your service can handle."
+        },
+        {
+          "title": "Give every wait an exit",
+          "text": "Receiving jobs, processing work and sending results can each block. Each needs a cancellation path. Passing a context is useful only when the called code observes it."
+        },
+        {
+          "title": "Own channel closure",
+          "text": "The producer closes jobs. A coordinator waits for every worker before closing results. Receivers must not close a channel while another goroutine might still send."
+        },
+        {
+          "title": "Cancellation is cooperative",
+          "text": "When a channel operation and cancellation are both ready, select may choose either. Promise bounded cleanup with cooperative code, not instantaneous termination."
+        }
+      ],
+      "takeaway": "Bound concurrency and give every blocking boundary an exit."
     },
     {
       "id": "sql-index-explain",
@@ -1603,7 +1655,39 @@
         "Restart after provider success recovers without a second charge in the fake-provider test.",
         "Retention and unresolved outcomes have explicit policies rather than an unlimited exactly-once promise."
       ],
-      "verifiedAt": "2026-11-01"
+      "verifiedAt": "2026-11-01",
+      "prediction": {
+        "question": "A payment request times out. Is it safe to retry with a new idempotency key?",
+        "answers": [
+          "Yes — a timeout means the charge failed",
+          "No — the provider may already have charged"
+        ],
+        "correct": 1,
+        "feedback": "A timeout proves the response was lost or late, not that the operation failed. Preserve the operation identity."
+      },
+      "conceptCards": [
+        {
+          "title": "A timeout means uncertainty",
+          "text": "The provider can charge successfully while the response is lost. A retry with a new key can look like a second payment."
+        },
+        {
+          "title": "Claim one logical operation",
+          "text": "Persist an account-scoped key, canonical request fingerprint and stable provider key. A unique constraint coordinates simultaneous retries. Commit the claim before external I/O."
+        },
+        {
+          "title": "Replay, reject or wait",
+          "text": "Replay completed results. Reject the same key with a different payload. For an active operation, return a documented pending response instead of starting another charge."
+        },
+        {
+          "title": "Recover after the crash",
+          "text": "An external charge and your database do not share one atomic transaction. Find durable unfinished records after restart, reconcile with the provider and then persist the outcome."
+        },
+        {
+          "title": "Define the limits",
+          "text": "Key expiry and error replay depend on provider and API version. Keep unresolved outcomes visible and define escalation instead of promising unlimited exactly-once delivery."
+        }
+      ],
+      "takeaway": "Retry the same operation identity; reconcile uncertain outcomes."
     },
     {
       "id": "system-feed-cache",
