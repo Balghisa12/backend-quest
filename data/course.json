@@ -172,36 +172,54 @@
       "topic": "TypeScript",
       "title": "1. Why unknown is safer than any",
       "scenario": "A customer wants to order coffee. They send quantity = -3. Our API must decide if this should be accepted.",
-      "explanation": "TypeScript checks the types in code before JavaScript runs. But a request from the internet is a real value that TypeScript cannot inspect beforehand. The type any means 'don't check how I use this value', so errors can slip through. unknown means 'I haven't checked it yet', so TypeScript makes us verify it before doing arithmetic. After checking the type, we must also check the business rule: an order quantity must be a positive integer. This is why a number like -3 can have the correct type and still be invalid for our shop. The example below compiles successfully: it rejects -3 at runtime rather than producing a TypeScript compilation error.",
-      "code": "const quantity: unknown = -3;\n\nif (\n  typeof quantity === \"number\" &&\n  Number.isInteger(quantity) &&\n  quantity > 0\n) {\n  console.log(\"Order accepted\");\n} else {\n  console.log(\"Order rejected\");\n}",
+      "explanation": "A type annotation describes what the compiler can assume; it does not inspect incoming JSON. Treat an external quantity as unknown until runtime checks establish what it is. Unlike any, unknown prevents arithmetic or property access before narrowing. A typeof guard narrows the value to number, but number still includes fractions, NaN and Infinity. Our business rule is stricter: a positive safe integer. Number.isSafeInteger plus a positivity check enforces that rule without silently converting strings. Return the validated number so downstream code does not repeat the boundary checks. A type assertion such as value as number changes compiler assumptions and performs no validation.",
+      "code": "function parseQuantity(value: unknown): number {\n  if (typeof value !== \"number\" ||\n      !Number.isSafeInteger(value) || value <= 0) {\n    throw new Error(\"Quantity must be a positive safe integer\");\n  }\n  return value;\n}\nconsole.log(parseQuantity(5)); // 5\n// parseQuantity(\"5\") throws; it does not coerce.",
       "walk": [
-        "unknown allows the value -3 to be stored without claiming we know how to use it.",
-        "typeof quantity === 'number' is true: -3 is a JavaScript number.",
-        "Number.isInteger(quantity) is true: -3 has no fractional part.",
-        "quantity > 0 is false: the shop must not sell a negative number of bags.",
-        "The conditions use &&, meaning AND. Because one condition is false, the else branch runs and prints Order rejected."
+        "Start with unknown: the caller has not established the runtime type.",
+        "The typeof check rejects strings, null and objects before comparison.",
+        "The OR conditions short-circuit: any failed requirement causes an error.",
+        "Number.isSafeInteger rejects fractions, NaN, Infinity and unsafe integers.",
+        "Return a number only after every requirement passes; string conversion would be a separate explicit product decision."
       ],
       "quiz": {
-        "question": "What happens with quantity = -3?",
+        "question": "Which implementation safely accepts only positive safe integer quantities?",
         "answers": [
-          "The checked code fails to compile because quantity is unknown",
-          "Order accepted, because -3 has the number type",
-          "Order rejected, because -3 is not positive"
+          "Assert value as number, then check value > 0",
+          "Use Number(value), then require a positive safe integer",
+          "Require typeof value === 'number', Number.isSafeInteger(value), and value > 0"
         ],
         "correct": 2,
-        "feedback": "The code compiles. The type check succeeds, but the positivity test fails, so the else branch prints Order rejected.",
+        "feedback": "Runtime type and domain checks are both necessary; this contract rejects numeric strings rather than coercing them.",
         "optionFeedback": [
-          "The typeof guard makes the comparison legal.",
-          "Having the number type doesn't make -3 positive.",
-          "Correct: the AND condition fails on positivity."
+          "An assertion performs no runtime check; a string can still reach the comparison.",
+          "Conversion would accept inputs such as '5' or true, violating the no-coercion contract.",
+          "Correct. The guard establishes the runtime type, integer safety and business rule."
         ]
       },
-      "exercise": "Replace -3 with the string \"5\". Will it be accepted? Think about the first condition before looking at the solution.",
-      "solution": "It is rejected. typeof \"5\" is 'string', so the first condition is false. With &&, later checks are not evaluated. A value can look like a number without being one.",
+      "exercise": "Implement parseQuantity(value: unknown): number. Accept 1 and 5. Reject '5', true, null, {}, 0, -3, 1.5, NaN, Infinity and Number.MAX_SAFE_INTEGER + 1. Do not use any, assertions or coercion. Explain why number alone is insufficient.",
+      "solution": "Use typeof value !== 'number' || !Number.isSafeInteger(value) || value <= 0 as the rejection condition, throw an error, otherwise return value. Test every listed case. TypeScript's number type does not encode positivity or safe integer constraints.",
       "interview": "I use unknown at API boundaries. I validate both the runtime type and business rules before passing data to my service.",
       "warning": "Writing `const q = req.body.quantity as number` does not validate real input; it only tells the compiler to trust you.",
       "module": "ts",
-      "focus": true
+      "focus": true,
+      "outcome": "Validate an untrusted quantity without assertions or accidental coercion.",
+      "prerequisites": [
+        "JavaScript typeof, functions and conditionals"
+      ],
+      "difficulty": "Beginner",
+      "estimatedMinutes": 15,
+      "sources": [
+        {
+          "title": "TypeScript Handbook: Narrowing",
+          "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+        }
+      ],
+      "acceptanceCriteria": [
+        "Accept 1 and 5 unchanged.",
+        "Reject all ten invalid inputs listed in the exercise.",
+        "Explain compile-time narrowing versus runtime validation without any or assertions."
+      ],
+      "verifiedAt": "2026-11-01"
     },
     {
       "id": "ts-unions",
@@ -1445,35 +1463,54 @@
       "topic": "Go concurrency",
       "title": "Worker pools, context cancellation and goroutine leaks",
       "scenario": "Your Go service processes external API jobs in parallel. Requests time out, but goroutines keep running and exhaust memory. How do you fix it?",
-      "explanation": "Bound concurrency with a fixed worker pool or semaphore, pass context.Context from request boundaries to downstream calls, and stop work promptly when ctx.Done fires. Always arrange for producers and workers to exit, and avoid blocked sends when consumers are gone. A context signals cancellation; it does not forcibly kill a goroutine. Use deadlines and context-aware database and HTTP clients.",
-      "code": "func worker(ctx context.Context, jobs <-chan Job, results chan<- Result) {\n  for {\n    select {\n    case <-ctx.Done():\n      return\n    case job, ok := <-jobs:\n      if !ok { return }\n      result := process(ctx, job)\n      select {\n      case <-ctx.Done(): return\n      case results <- result:\n      }\n    }\n  }\n}",
+      "explanation": "A worker pool limits active work, but limiting goroutines does not guarantee they can exit. A worker may block waiting for a job, inside processing, or sending a result after the consumer has left. Cancellation must reach all three boundaries. context.Context signals cancellation cooperatively; it never forcibly kills a goroutine. The worker below handles receiving and sending, while process must also honor context during I/O or long-running computation. The producer alone closes jobs. A coordinator waits for all workers before closing results, so no worker can send to a closed channel. When cancellation and a channel operation are both ready, select may choose either: do not promise instantaneous stopping or zero results after cancellation.",
+      "code": "// Fragment: caller supplies process and starts a bounded number of workers.\nfunc worker(ctx context.Context, jobs <-chan int, results chan<- int,\n    process func(context.Context, int) (int, error)) {\n  for {\n    select {\n    case <-ctx.Done():\n      return\n    case job, ok := <-jobs:\n      if !ok { return }\n      if ctx.Err() != nil { return }\n      result, err := process(ctx, job)\n      if err != nil { return } // Coordinator must define error reporting.\n      select {\n      case <-ctx.Done():\n        return\n      case results <- result:\n      }\n    }\n  }\n}",
       "walk": [
-        "Jobs is a receive-only channel, making the worker's ownership clear.",
-        "The first select exits when context is cancelled or input closes.",
-        "process must propagate ctx to network and database calls.",
-        "The send select prevents blocking forever after the caller has gone.",
-        "Bound the worker count and wait for workers to exit on shutdown."
+        "Start a fixed number of workers; a bounded job queue also limits queued work.",
+        "Producer sends using a cancellation-aware select and closes only its jobs channel.",
+        "Each worker selects between receiving work and cancellation, checking channel closure.",
+        "process propagates context into HTTP/database calls or checks it during computation.",
+        "Sending results also observes cancellation, so an absent consumer cannot trap the worker.",
+        "A coordinator tracks every worker with a WaitGroup, waits for exit, then closes results. Define how processing errors reach the caller."
       ],
       "quiz": {
-        "question": "Does cancelling a Go context automatically terminate every goroutine?",
+        "question": "A worker checks ctx.Done while receiving jobs, but uses results <- result directly. The consumer exits early. What is still wrong?",
         "answers": [
-          "Yes, immediately",
-          "No, code must observe ctx.Done and stop cooperatively",
-          "Only when using buffered channels"
+          "The send can block forever; select between sending and cancellation too",
+          "A buffer of one guarantees termination for any workload",
+          "Canceling context will interrupt that plain channel send"
         ],
-        "correct": 1,
-        "feedback": "Cancellation is cooperative; goroutines must check the signal.",
+        "correct": 0,
+        "feedback": "Every potentially indefinite blocking operation needs a termination path. A context cannot interrupt a plain channel send.",
         "optionFeedback": [
-          "A context does not kill goroutines.",
-          "Correct: code and downstream clients must cooperate.",
-          "Buffering does not change cancellation semantics."
+          "Correct. Cancellation-aware receiving does not protect the later send.",
+          "A finite buffer can fill when more results arrive than it can hold.",
+          "Cancellation is cooperative; the plain send does not observe ctx.Done."
         ]
       },
-      "exercise": "Identify two places a goroutine can leak in a fan-out/fan-in pipeline, and propose a cancellation-safe fix.",
-      "solution": "Blocked sending to results after a consumer returns, and blocked receiving from a producer that never closes jobs. Use ctx-aware selects, close owned channels, and coordinate workers with WaitGroup.",
+      "exercise": "Build a two-worker pipeline with an unbuffered results channel. Consume one result, cancel and stop reading. Use a completion channel plus a test timeout to prove producers and workers exit. Also test empty input, normal completion and cancellation during process. Run go test -race. Document how errors are reported.",
+      "solution": "Producer and worker channel operations select on ctx.Done. process must cooperate; use a cancel-aware blocking fake to test it. Track workers with a WaitGroup; only the coordinator closes results after Wait returns. Test completion with select on a done channel and a timeout rather than sleeps or global goroutine counts. A race test alone does not prove absence of leaks.",
       "interview": "I use bounded concurrency, propagate context to every I/O boundary, and design clear channel ownership. I test cancellations and race conditions with go test -race.",
       "warning": "Never close a channel from the receiving side when other senders may still write.",
-      "focus": "Go · Concurrency · Reliability"
+      "focus": "Go · Concurrency · Reliability",
+      "outcome": "Explain and repair cancellation at every blocking boundary of a bounded worker pipeline.",
+      "prerequisites": [
+        "Go functions, goroutines, channels and select"
+      ],
+      "difficulty": "Intermediate",
+      "estimatedMinutes": 25,
+      "sources": [
+        {
+          "title": "Go: Pipelines and cancellation",
+          "url": "https://go.dev/blog/pipelines"
+        }
+      ],
+      "acceptanceCriteria": [
+        "Consumer early exit followed by cancellation terminates producer and workers within the test timeout.",
+        "Empty input and normal completion close results without panic.",
+        "Cancellation during cooperative processing exits; errors have an explicit reporting policy."
+      ],
+      "verifiedAt": "2026-11-01"
     },
     {
       "id": "sql-index-explain",
@@ -1517,36 +1554,56 @@
       "topic": "API reliability",
       "title": "Design an idempotent payment endpoint",
       "scenario": "A client times out after submitting payment and retries. The first request may have succeeded. How do you prevent double charging?",
-      "explanation": "The client sends a stable idempotency key for a logical operation. The server scopes it to the authenticated account, stores request fingerprint and outcome in durable storage with a unique constraint, and returns the original result for same-key retries. Reject same key with different payload. Coordinate with payment provider idempotency and transaction/outbox boundaries; a key alone does not make multi-system side effects atomic.",
-      "code": "POST /payments\nIdempotency-Key: 5b1f...unique-operation-id\n\nBEGIN;\n-- Unique key is scoped to account and operation.\nINSERT INTO idempotency (account_id, idem_key, request_hash, status)\nVALUES (42, '5b1f...', 'sha256...', 'processing')\nON CONFLICT DO NOTHING;\n-- Winner performs the guarded workflow and stores final result.\nCOMMIT;",
+      "explanation": "A timeout means the client did not receive a result; it does not prove the payment failed. Assign one stable idempotency key to one logical operation. Authenticate and validate before claiming the key, then scope the record by account and operation with a unique constraint. Persist a canonical request fingerprint, processing state and provider key before making the external call. A same-key different-payload request is rejected. For a completed operation, replay the stored outcome; for an active operation, return a documented pending response instead of starting another charge. A crash after the provider succeeds leaves an uncertain local outcome. Reconcile with the same provider key or provider lookup, then persist the result. Database transactions cannot roll back an external charge. Provider retention and retry semantics vary, so verify the exact API version rather than promising universal exactly-once delivery.",
+      "code": "// Workflow pseudocode: not an executable payment implementation.\nauthenticateAndValidate(request);\nrecord = durableClaim(accountId, \"payment\", key, fingerprint);\n// durableClaim uses a unique constraint and commits before external I/O.\nif (record.payloadMismatch) return conflict();\nif (record.completed) return replay(record.outcome);\nif (!record.claimedByThisAttempt) return pending(record.operationId);\ntry {\n  outcome = await chargeWithStableProviderKey(record.providerKey);\n  await persistOutcome(record.id, outcome);\n  return outcome;\n} catch (error) {\n  // A timeout is uncertain: retain the claim and reconcile.\n  await scheduleReconciliation(record.id);\n  return pending(record.operationId);\n}",
       "walk": [
-        "Client reuses the same key only for retries of the same operation.",
-        "Server checks the key belongs to the authenticated account.",
-        "Unique constraint ensures concurrent retries cannot both claim ownership.",
-        "Store stable final result and request fingerprint.",
-        "Integrate provider-side idempotency and reconcile uncertain outcomes.",
-        "Define expiration and recovery when a processing attempt crashes."
+        "Client creates one key per payment intent and preserves it across timeout retries.",
+        "Server derives account identity from authentication and fingerprints the validated payment fields.",
+        "A committed unique claim prevents concurrent attempts from independently starting a new operation.",
+        "A payload mismatch is a conflict; a completed request replays its outcome; an active request returns documented pending state.",
+        "External requests use the persisted provider key. A timeout does not release the claim for a fresh charge.",
+        "A recovery worker scans durable unfinished records, reconciles provider status and persists outcomes. Recovery cannot rely only on scheduling in the catch block.",
+        "Define retention, provider-key expiry, retryable failures and manual escalation for unresolved outcomes."
       ],
       "quiz": {
-        "question": "What should happen when a retry reuses an idempotency key with a different payment amount?",
+        "question": "The provider charged successfully, then your server crashed before storing the outcome. What is the safest recovery?",
         "answers": [
-          "Process as a new payment",
-          "Reject the request due to mismatched payload",
-          "Charge both amounts"
+          "Delete the local claim and retry with a new provider key",
+          "Treat the timeout as a declined payment",
+          "Keep the operation unresolved and reconcile using its persisted provider key or provider reference"
         ],
-        "correct": 1,
-        "feedback": "An idempotency key identifies one logical operation, not arbitrary requests.",
+        "correct": 2,
+        "feedback": "An unknown outcome must be reconciled, not treated as failure. A new key can cause a second charge.",
         "optionFeedback": [
-          "A same-key different-payload request is unsafe.",
-          "Correct: detect and reject the mismatch.",
-          "This risks duplicate or incorrect charges."
+          "A fresh provider key can turn a retry into a second charge.",
+          "A timeout or crash does not prove that the external operation failed.",
+          "Correct. Preserve identity across recovery and verify the provider outcome before finalizing local state."
         ]
       },
-      "exercise": "Explain what happens when the server crashes after the provider charges the card but before the database commits.",
-      "solution": "Use the provider idempotency key and reconcile the operation state; retry safely with the same provider key, read provider status and complete local durable record. Consider outbox/workflow architecture.",
+      "exercise": "Specify and test a payment state machine using a fake provider and durable test database. Cover same-key replay, changed amount, two simultaneous requests, timeout after provider success and restart before local result persistence. Define pending responses and expired-key handling.",
+      "solution": "Use processing, succeeded, failed and unresolved states with documented transitions. Enforce uniqueness on account/operation/key and compare canonical payloads. Replay persisted terminal outcomes. Keep timeouts unresolved until provider lookup or safe same-key retry establishes the outcome. Recovery discovers durable unfinished records after restart. Never retry with a new key merely because the first response was lost.",
       "interview": "I define idempotency at the business-operation boundary, persist key and payload fingerprint, deduplicate concurrent attempts, and reconcile uncertain external side effects.",
       "warning": "A database unique key alone cannot atomically commit an external payment provider charge.",
-      "focus": "API · Transactions · Distributed systems"
+      "focus": "API · Transactions · Distributed systems",
+      "outcome": "Design a durable retry-safe payment workflow including concurrent retries and uncertain provider outcomes.",
+      "prerequisites": [
+        "HTTP requests, SQL transactions and unique constraints"
+      ],
+      "difficulty": "Advanced",
+      "estimatedMinutes": 25,
+      "sources": [
+        {
+          "title": "Stripe: Idempotent requests (provider-specific API v1/v2 semantics)",
+          "url": "https://docs.stripe.com/api/idempotent_requests"
+        }
+      ],
+      "acceptanceCriteria": [
+        "Concurrent same-key requests create one claimed logical operation.",
+        "Changed payload is rejected and completed retries replay the stored outcome.",
+        "Restart after provider success recovers without a second charge in the fake-provider test.",
+        "Retention and unresolved outcomes have explicit policies rather than an unlimited exactly-once promise."
+      ],
+      "verifiedAt": "2026-11-01"
     },
     {
       "id": "system-feed-cache",
