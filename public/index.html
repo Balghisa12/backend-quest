@@ -228,13 +228,14 @@ const feed=document.getElementById("feed");
 const shell=document.getElementById("shell");
 const sheet=document.getElementById("sheet");
 let lessons=[],modules=[],slides=[],active=0,selectedModule="all",observer=null;
-let progress={answers:{},bookmarks:[],notes:{},completed:[],lastSlide:null,views:{}};
+let progress={predictions:{},answers:{},bookmarks:[],notes:{},completed:[],lastSlide:null,views:{}};
 try{const read=JSON.parse(localStorage.getItem(KEY)||"{}");progress={...progress,...read}}catch{}
 if(!progress.answers||typeof progress.answers!=="object")progress.answers={};
 if(!Array.isArray(progress.bookmarks))progress.bookmarks=[];
 if(!Array.isArray(progress.completed))progress.completed=[];
 if(!progress.notes||typeof progress.notes!=="object")progress.notes={};
 if(!progress.views||typeof progress.views!=="object")progress.views={};
+if(!progress.predictions||typeof progress.predictions!=="object")progress.predictions={};
 function save(){try{localStorage.setItem(KEY,JSON.stringify(progress))}catch{}}
 function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
 function splitText(value,max){
@@ -252,8 +253,10 @@ function buildSlides(){
  for(const l of selected){
   const base={lessonId:l.id,lesson:l,group:groupFor(l.module)};
   slides.push({...base,id:l.id+":hook",kind:"hook",text:l.scenario,stage:"Real life"});
-  splitText(l.explanation,270).forEach((part,i,all)=>slides.push({...base,id:l.id+":explain:"+i,kind:"explain",text:part,part:i+1,total:all.length,stage:"Learn"}));
-  const lines=(l.code||"").split("\n");const per=9;
+  if(l.prediction)slides.push({...base,id:l.id+":predict",kind:"predict",stage:"Predict"});
+ const concepts=l.conceptCards||splitText(l.explanation,270).map(text=>({text}));
+ concepts.forEach((card,i)=>slides.push({...base,id:l.id+":explain:"+i,kind:"explain",text:card.text,heading:card.title,part:i+1,total:concepts.length,stage:"Learn"}));
+  const lines=(l.code||"").split("\n");const per=l.outcome?Math.max(1,lines.length):9;
   for(let i=0;i<lines.length;i+=per)slides.push({...base,id:l.id+":code:"+Math.floor(i/per),kind:"code",code:lines.slice(i,i+per).join("\n"),part:Math.floor(i/per)+1,total:Math.ceil(lines.length/per),stage:"Code"});
   const walk=l.walk||[];
   for(let i=0;i<walk.length;i+=2)slides.push({...base,id:l.id+":walk:"+Math.floor(i/2),kind:"walk",steps:walk.slice(i,i+2),offset:i,part:Math.floor(i/2)+1,total:Math.ceil(walk.length/2),stage:"Understand"});
@@ -262,21 +265,27 @@ function buildSlides(){
   slides.push({...base,id:l.id+":recap",kind:"recap",stage:"Interview ready"});
  }
 }
-function lessonStage(s){return ["hook","explain","code","walk","quiz","apply","recap"].indexOf(s.kind)+1}
-function stageName(s){return ["Problem","Concept","Code","Walkthrough","Quiz","Practice","Interview"][lessonStage(s)-1]}
+function lessonKinds(s){return s.lesson.prediction?["hook","predict","explain","code","walk","quiz","apply","recap"]:["hook","explain","code","walk","quiz","apply","recap"]}
+function lessonStage(s){return lessonKinds(s).indexOf(s.kind)+1}
+function stageName(s){return {hook:"Problem",predict:"Predict",explain:"Concept",code:"Code",walk:"Walkthrough",quiz:"Recall",apply:"Practice",recap:"Recap"}[s.kind]}
 function segmentLabel(s){return s.kind==="hook"?"01 · A real situation":s.kind==="explain"?"02 · THE EXPLANATION":s.kind==="code"?"03 · REAL CODE":s.kind==="walk"?"04 · STEP BY STEP":s.kind==="quiz"?"05 · CHOOSE YOUR ANSWER":s.kind==="apply"?"06 · PRACTICE": "07 · RECAP"}
 function lessonPosition(l){return lessons.findIndex(x=>x.id===l.id)+1}
 function makeSlide(s,i){
  const l=s.lesson;const saved=progress.bookmarks.includes(l.id);let content="";
  const title=l.title.replace(/^\d+\.\s*/,"");
- if(s.kind==="hook")content='<div class="pill">✦ '+esc(moduleName(l.module))+' · Lesson '+lessonPosition(l)+'</div><div class="eyebrow">Here is a real problem</div><h1 class="big-title">'+esc(title)+'</h1><p class="body-text">'+esc(s.text)+'</p><div class="card-panel"><b>What you will learn</b><p>You will practice this concept with code, a quick check and an interview answer.</p></div>';
- if(s.kind==="explain")content='<div class="eyebrow">Understand · '+s.part+'/'+s.total+'</div><h2 class="big-title concept-title">'+esc(s.part===1?l.topic:"Build the mental model")+'</h2><div class="concept-copy">'+s.text.split(/(?<=[.!?])\s+/).map((sentence,n)=>'<p class="'+(n===0?'lead-sentence':'detail-sentence')+'">'+esc(sentence)+'</p>').join("")+'</div><div class="memory-cue"><strong>Say it simply</strong><span>What is the main engineering idea here?</span></div>';
+ if(s.kind==="hook")content='<div class="pill">✦ '+esc(moduleName(l.module))+' · Lesson '+lessonPosition(l)+'</div><div class="eyebrow">Here is a real problem</div><h1 class="big-title">'+esc(title)+'</h1><p class="body-text">'+esc(s.text)+'</p>';
+ if(s.kind==="predict"){const q=l.prediction;const a=progress.predictions[l.id];content='<div class="eyebrow">Think before you reveal</div><h2 class="big-title concept-title">'+esc(q.question)+'</h2><p class="feed-note">Make a prediction. This is a starting point, not a score.</p><div class="quiz-options">'+q.answers.map((x,n)=>'<button class="opt '+(a&&a.choice===n?'selected '+(n===q.correct?'good':'bad'):'')+'" data-action="predict" data-lesson="'+esc(l.id)+'" data-choice="'+n+'" aria-pressed="'+!!(a&&a.choice===n)+'"><span class="letter">'+String.fromCharCode(65+n)+'</span><span>'+esc(x)+'</span></button>').join("")+'</div>'+(a?'<div class="feedback" role="status"><b>'+ (a.choice===q.correct?'Prediction confirmed':'Update your mental model')+'</b>'+esc(q.feedback)+'</div>':'');}
+ if(s.kind==="explain")content='<div class="eyebrow">Understand · '+s.part+'/'+s.total+'</div><h2 class="big-title concept-title">'+esc(s.heading||(s.part===1?l.topic:"Build the mental model"))+'</h2><div class="concept-copy">'+s.text.split(/(?<=[.!?])\s+/).map((sentence,n)=>'<p class="'+(n===0?'lead-sentence':'detail-sentence')+'">'+esc(sentence)+'</p>').join("")+'</div><div class="memory-cue"><strong>Say it simply</strong><span>What is the main engineering idea here?</span></div>';
  if(s.kind==="code")content='<div class="eyebrow">Code example · '+s.part+'/'+s.total+'</div><h2 class="big-title concept-title">How it works in code</h2><pre class="code"><code>'+esc(s.code)+'</code></pre><p class="code-caption">Read each line slowly. Next, we explain exactly what the code is doing.</p>';
  if(s.kind==="walk")content='<div class="eyebrow">Step-by-step · '+s.part+'/'+s.total+'</div><h2 class="big-title concept-title">Trace the logic</h2>'+s.steps.map((step,j)=>'<div class="card-panel"><b>Step '+(s.offset+j+1)+'</b><p>'+esc(step)+'</p></div>').join('');
  if(s.kind==="quiz"){const a=progress.answers[l.id],pick=a?a.choice:-1;const why=a?(l.quiz.optionFeedback?.[a.choice]||l.quiz.feedback):"";content='<div class="eyebrow">Quick knowledge check</div><h2 class="big-title">'+esc(l.quiz.question)+'</h2><div class="quiz-options">'+l.quiz.answers.map((x,n)=>'<button class="opt '+(pick===n?'selected '+(pick===l.quiz.correct?'good':'bad'):'')+'" data-action="answer" data-lesson="'+esc(l.id)+'" data-choice="'+n+'"><span class="letter">'+String.fromCharCode(65+n)+'</span><span>'+esc(x)+'</span></button>').join("")+'</div>'+(a?'<div class="feedback '+(a.correct?'':'bad')+'"><b>'+(a.correct?'✓ You got it!':'Not quite — this is how we learn.')+'</b>'+esc(why)+'</div><div class="card-panel"><b>Why this is the answer</b><p>'+esc(l.quiz.feedback)+'</p></div><button class="soft-btn" data-action="restudy" data-lesson="'+esc(l.id)+'">↶ Review the explanation</button><p class="feed-note">'+(a.correct?'Good work. You can scroll to try the exercise.':'Try another option if you like, or swipe to see the explanation.')+'</p>':'<p class="feed-note">Tap one answer. You get feedback immediately, no pressure.</p>')}
- if(s.kind==="apply")content='<div class="eyebrow">Your practice exercise</div><h2 class="big-title concept-title">Your interview answer</h2><p class="body-text">'+esc(l.exercise)+'</p><textarea class="note-input" rows="4" placeholder="Explain in your own words. It saves automatically…" aria-label="Your answer" data-action="note" data-lesson="'+esc(l.id)+'">'+esc(progress.notes[l.id]||"")+'</textarea><button class="soft-btn" data-action="reveal" data-lesson="'+esc(l.id)+'">Show explained answer ↓</button><div id="solution-'+esc(l.id)+'" hidden class="feedback"><b>One good answer</b>'+esc(l.solution)+'</div>';
+ if(s.kind==="apply")content='<div class="eyebrow">Your practice exercise</div><h2 class="big-title concept-title">Put the idea to work</h2><p class="body-text">'+esc(l.exercise)+'</p><textarea class="note-input" rows="4" placeholder="Explain in your own words. It saves automatically…" aria-label="Your answer" data-action="note" data-lesson="'+esc(l.id)+'">'+esc(progress.notes[l.id]||"")+'</textarea><button class="soft-btn" data-action="reveal" data-lesson="'+esc(l.id)+'">Show explained answer ↓</button><div id="solution-'+esc(l.id)+'" hidden class="feedback"><b>One good answer</b>'+esc(l.solution)+'</div>';
  if(s.kind==="recap")content='<div class="eyebrow">Interview-ready recap</div><h2 class="big-title">Can you explain it aloud?</h2><div class="quote">'+esc(l.interview)+'</div><div class="card-panel"><b>One mistake to avoid</b><p>'+esc(l.warning)+'</p></div><button class="done-btn" data-action="complete" data-lesson="'+esc(l.id)+'">'+(progress.completed.includes(l.id)?'✓ Learned — keep going':'✓ I understand this lesson')+'</button><p class="feed-note">Speak this aloud in under 60 seconds, then mark the lesson complete.</p>';
- return '<article class="slide" data-index="'+i+'" data-id="'+esc(s.id)+'" data-group="'+esc(s.group)+'" aria-label="'+esc(s.stage+' · '+l.title)+'"><button class="slide-bookmark '+(saved?'saved':'')+'" data-action="bookmark" data-lesson="'+esc(l.id)+'" aria-label="'+(saved?'Remove saved lesson':'Save lesson for later')+'">'+(saved?'♥':'♡')+'</button><div class="slide-content" tabindex="0" role="region" aria-label="Lesson content: scroll to read"><div class="lesson-step"><span>'+esc(stageName(s))+'</span><span>'+lessonStage(s)+' of 7</span></div>'+content+'<div class="end-cue">↓ Swipe up for the next card</div></div></article>';
+ if(s.kind==="recap"&&l.takeaway){const recalled=!!progress.answers[l.id]?.correct;content='<div class="eyebrow">End of lesson</div><h2 class="big-title concept-title">'+esc(l.takeaway)+'</h2><div class="card-panel"><b>Your progress</b><p>Read: reached the recap</p><p>Recall: '+(recalled?'answered the check correctly':'not yet demonstrated')+'</p><p>Apply: use the practice criteria to check your work; code is not graded here.</p></div><details class="card-panel"><summary>Review the explanation</summary><p>'+esc(l.explanation)+'</p></details><div class="card-panel"><b>Watch out</b><p>'+esc(l.warning)+'</p></div><button class="done-btn" data-action="complete" data-lesson="'+esc(l.id)+'">'+(progress.completed.includes(l.id)?'✓ Reading complete':'Mark reading complete')+'</button>';}
+ if(s.kind==="hook"&&l.outcome)content+='<div class="card-panel"><b>Learning goal</b><p>'+esc(l.outcome)+'</p><b>Before you start</b><p>'+esc((l.prerequisites||[]).join("; "))+'</p><p>'+esc(l.difficulty)+' · '+esc(l.estimatedMinutes)+' minutes</p></div>';
+ if(s.kind==="apply"&&l.acceptanceCriteria)content+='<div class="card-panel"><b>Success criteria</b><ul>'+l.acceptanceCriteria.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul></div>';
+ if(s.kind==="recap"&&l.sources)content+='<div class="card-panel"><b>Sources · checked '+esc(l.verifiedAt)+'</b><ul>'+l.sources.filter(x=>{try{return new URL(x.url).protocol==="https:"}catch{return false}}).map(x=>'<li><a style="color:var(--green)" href="'+esc(x.url)+'" target="_blank" rel="noopener noreferrer">'+esc(x.title)+'</a></li>').join("")+'</ul></div>';
+ return '<article class="slide" data-index="'+i+'" data-id="'+esc(s.id)+'" data-group="'+esc(s.group)+'" aria-label="'+esc(s.stage+' · '+l.title)+'"><button class="slide-bookmark '+(saved?'saved':'')+'" data-action="bookmark" data-lesson="'+esc(l.id)+'" aria-label="'+(saved?'Remove saved lesson':'Save lesson for later')+'">'+(saved?'♥':'♡')+'</button><div class="slide-content" tabindex="0" role="region" aria-label="Lesson content: scroll to read"><div class="lesson-step"><span>'+esc(stageName(s))+'</span><span>'+lessonStage(s)+' of '+lessonKinds(s).length+'</span></div>'+content+'<div class="end-cue">↓ Swipe up for the next card</div></div></article>';
 }
 function render(targetId){
  buildSlides();
@@ -308,11 +317,23 @@ function openSheet(mode){const sc=document.getElementById("sheetContent");docume
 function closeSheet(){sheet.hidden=true;document.getElementById("chaptersBtn").focus()}
 function selectModule(id){selectedModule=id;sheet.hidden=true;render();updateTop()}
 function toggleBookmark(id){if(progress.bookmarks.includes(id))progress.bookmarks=progress.bookmarks.filter(x=>x!==id);else progress.bookmarks.push(id);save();if(selectedModule==="saved"){render();return}for(const b of feed.querySelectorAll('[data-action="bookmark"][data-lesson="'+id+'"]')){const saved=progress.bookmarks.includes(id);b.textContent=saved?'♥':'♡';b.classList.toggle("saved",saved);b.setAttribute("aria-label",saved?"Remove saved lesson":"Save lesson for later")}}
-function answerQuiz(id,choice){const l=lessons.find(x=>x.id===id);if(!l)return;progress.answers[id]={choice,correct:choice===l.quiz.correct};save();const index=slides.findIndex(x=>x.id===id+":quiz");const el=feed.querySelector('.slide[data-index="'+index+'"]');if(!el)return;const rep=document.createElement("div");rep.innerHTML=makeSlide(slides[index],index);const newEl=rep.firstElementChild;el.replaceWith(newEl);observer.unobserve(el);observer.observe(newEl);onActive()}
-function completeLesson(id){if(!progress.completed.includes(id))progress.completed.push(id);save();goIndex(active+1)}
+function answerQuiz(id,choice){const l=lessons.find(x=>x.id===id);if(!l)return;progress.answers[id]={choice,correct:choice===l.quiz.correct};save();const index=slides.findIndex(x=>x.id===id+":quiz");const el=feed.querySelector('.slide[data-index="'+index+'"]');if(!el)return;const rep=document.createElement("div");rep.innerHTML=makeSlide(slides[index],index);const newEl=rep.firstElementChild;el.replaceWith(newEl);observer.unobserve(el);observer.observe(newEl);refreshRecap(id);onActive()}
+function answerPrediction(id,choice){
+ const l=lessons.find(x=>x.id===id);
+ if(!l?.prediction||!Number.isInteger(choice)||choice<0||choice>=l.prediction.answers.length)return;
+ progress.predictions[id]={choice};save();
+ const index=slides.findIndex(x=>x.id===id+":predict");
+ const el=feed.querySelector('.slide[data-index="'+index+'"]');if(!el)return;
+ const rep=document.createElement("div");rep.innerHTML=makeSlide(slides[index],index);
+ const next=rep.firstElementChild;el.replaceWith(next);observer.unobserve(el);observer.observe(next);
+ next.querySelector('[data-choice="'+choice+'"]')?.focus({preventScroll:true});
+}
+function refreshRecap(id){const i=slides.findIndex(s=>s.id===id+":recap");const el=feed.querySelector('.slide[data-index="'+i+'"]');if(!el)return;const box=document.createElement("div");box.innerHTML=makeSlide(slides[i],i);el.replaceWith(box.firstElementChild);observer.unobserve(el);observer.observe(box.firstElementChild)}
+function completeLesson(id){if(!progress.completed.includes(id))progress.completed.push(id);save();refreshRecap(id);goIndex(active+1)}
 feed.addEventListener("click",function(e){
  const b=e.target.closest("[data-action]");if(!b)return;
  const action=b.dataset.action,id=b.dataset.lesson;
+ if(action==="predict")answerPrediction(id,Number(b.dataset.choice));
  if(action==="answer")answerQuiz(id,Number(b.dataset.choice));
  if(action==="bookmark")toggleBookmark(id);
  if(action==="complete")completeLesson(id);
